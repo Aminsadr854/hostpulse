@@ -150,6 +150,35 @@ async def do_logout(request):
 
 
 # -------------------------------------------------------------------- api
+RANGE_SECONDS = {
+    "1h": 3600, "6h": 6 * 3600, "24h": 86400,
+    "7d": 7 * 86400, "30d": 30 * 86400,
+}
+
+
+def _bucket_for(span):
+    """
+    The right resolution for a span, and the coarser ones to fall back to.
+
+    Two forces pull against each other. Too fine and a month is forty thousand
+    points, most of them redrawn into the same pixel. Too coarse and a day is
+    twenty-four, which hides everything that happened inside an hour.
+
+    So the resolution is chosen by span - minute samples up to a day, hourly up
+    to a week, daily beyond - and then, if the panel has not been running long
+    enough for that bucket to hold anything, it drops to a finer one that does.
+    A history that has only existed for eight hours contains no complete day,
+    and a daily chart of it is empty.
+    """
+    if span > 7 * 86400:
+        preferred = ["day", "hour", None]
+    elif span > 86400:
+        preferred = ["hour", None]
+    else:
+        preferred = [None]
+    return preferred
+
+
 def _summary(con, s):
     last = db.latest(con, s["id"])
     rx_rate, tx_rate = db.latest_rate(con, s["id"])
@@ -243,18 +272,32 @@ async def api_server(request):
     s = db.get_server(con, sid)
     if not s:
         return web.json_response({"error": "not found"}, status=404)
-    rng = request.query.get("range", "24h")
     now = int(time.time())
-    if rng == "24h":
-        since, bucket = now - 86400, None
-    elif rng == "7d":
-        since, bucket = now - 7 * 86400, "hour"
-    else:
-        since, bucket = now - 30 * 86400, "day"
+    rng = request.query.get("range", "24h")
+    span = RANGE_SECONDS.get(rng)
+    if span is None:
+        rng, span = "24h", 86400
+    since = now - span
+
+    # The bucket is chosen by what there is, not by a fixed table. A panel that
+    # has been collecting for eight hours has no complete day in it, so asking
+    # for daily rollups over a month returns nothing at all and the chart is
+    # blank - which is what "the weekly and monthly graphs show nothing" was.
+    # Falling to a finer bucket costs a few hundred more points and makes the
+    # view useful from the first hour.
+    points, bucket = [], None
+    for candidate in _bucket_for(span):
+        points = db.series(con, sid, since, candidate)
+        bucket = candidate
+        if len(points) >= 3:
+            break
+
     return web.json_response({
         "server": _summary(con, s),
         "range": rng,
-        "points": db.series(con, sid, since, bucket),
+        "bucket": bucket or "raw",
+        "step": {"day": 86400, "hour": 3600}.get(bucket, collector.POLL_SECONDS),
+        "points": points,
     })
 
 

@@ -250,15 +250,12 @@ const esc = (t) => String(t === null || t === undefined ? '' : t)
 /* -------------------------------------------------------------- detail */
 let charts = {}, detailId = null, detailRange = '24h';
 
-// bucket: what the server aggregates by; step: seconds each point covers, used
-// to turn a bucket total back into a rate.
-const RANGES = {
-  '1h':  {secs: 3600,       bucket: null,  step: 60,    kind: 'rate'},
-  '6h':  {secs: 6 * 3600,   bucket: null,  step: 60,    kind: 'rate'},
-  '24h': {secs: 86400,      bucket: null,  step: 60,    kind: 'rate'},
-  '7d':  {secs: 7 * 86400,  bucket: 'hour', step: 3600, kind: 'total'},
-  '30d': {secs: 30 * 86400, bucket: 'day',  step: 86400, kind: 'total'},
-};
+/* The server decides how far to aggregate - it is the only side that knows how
+   much history exists - and reports the bucket it used along with the seconds
+   each point covers. Assuming that here was how the weekly view ended up
+   asking for data that did not exist yet. */
+const RANGE_SECONDS = {'1h': 3600, '6h': 21600, '24h': 86400,
+                       '7d': 604800, '30d': 2592000};
 
 async function openDetail(id) {
   detailId = id;
@@ -282,7 +279,8 @@ async function loadDetail() {
     <div><span>ترافیک ۳۰ روز</span><b>${fmtBytes(s.month.total)}</b></div>`;
 
   const pts = d.points;
-  const R = RANGES[detailRange];
+  const step = d.step || 60;              // seconds each point covers
+  const span = RANGE_SECONDS[detailRange] || 86400;
   $('#d-thin').hidden = pts.length >= 3;
 
   // Latin digits and a 24-hour clock: Persian digits on a dense axis are hard
@@ -290,37 +288,32 @@ async function loadDetail() {
   const fmt = (ts) => {
     const t = new Date(ts * 1000);
     const p2 = (n) => String(n).padStart(2, '0');
-    return R.secs <= 86400
+    return span <= 86400
       ? `${p2(t.getHours())}:${p2(t.getMinutes())}`
       : `${p2(t.getDate())}/${p2(t.getMonth() + 1)}` +
-        (R.bucket === 'hour' ? ` ${p2(t.getHours())}h` : '');
+        (d.bucket === 'hour' || d.bucket === 'raw' ? ` ${p2(t.getHours())}h` : '');
   };
   const labels = pts.map(p => fmt(p.ts));
 
   draw('c-cpu', labels, [
-    {label: 'پردازنده ٪', data: pts.map(p => p.cpu_pct), color: '#5b9dff'},
-    {label: 'حافظه ٪', data: pts.map(p => p.mem_pct), color: '#3ddc84'},
+    {label: 'پردازنده ٪', data: pts.map(p => p.cpu_pct), color: '#38BDF8'},
+    {label: 'حافظه ٪', data: pts.map(p => p.mem_pct), color: '#22C55E'},
   ], {max: 100, unit: 'pct'});
 
-  // Live views read better as a rate; a week or a month is a question about
-  // volume - how much did this move on Tuesday - so those are bucket totals.
-  if (R.kind === 'rate') {
-    draw('c-net', labels, [
-      {label: 'دریافت', data: pts.map(p => (p.rx_bytes || 0) / R.step), color: '#5b9dff', fill: true},
-      {label: 'ارسال', data: pts.map(p => (p.tx_bytes || 0) / R.step), color: '#c48bff', fill: true},
-    ], {unit: 'rate'});
-    $('#net-title').textContent = 'پهنای باند (بیت بر ثانیه)';
-  } else {
-    draw('c-net', labels, [
-      {label: 'دریافت', data: pts.map(p => p.rx_bytes || 0), color: '#5b9dff'},
-      {label: 'ارسال', data: pts.map(p => p.tx_bytes || 0), color: '#c48bff'},
-    ], {unit: 'bytes', bars: true, stacked: true});
-    $('#net-title').textContent =
-      R.bucket === 'day' ? 'ترافیک هر روز (بایت)' : 'ترافیک هر ساعت (بایت)';
-  }
+  // Always a rate, and always a line. Throughput is a continuous quantity, so
+  // it reads as a curve; dividing every bucket by the seconds it covers means
+  // an hourly point and a minute point sit on the same axis and can be
+  // compared, which bars of raw bucket totals could not.
+  draw('c-net', labels, [
+    {label: 'دریافت', data: pts.map(p => (p.rx_bytes || 0) / step), color: '#38BDF8', fill: true},
+    {label: 'ارسال', data: pts.map(p => (p.tx_bytes || 0) / step), color: '#A78BFA', fill: true},
+  ], {unit: 'rate'});
+  $('#net-title').textContent = 'پهنای باند (بیت بر ثانیه)' +
+    (d.bucket === 'day' ? ' — میانگین روزانه'
+     : d.bucket === 'hour' ? ' — میانگین ساعتی' : '');
 
   draw('c-disk', labels, [
-    {label: 'دیسک ٪', data: pts.map(p => p.disk_pct), color: '#ffb020'},
+    {label: 'دیسک ٪', data: pts.map(p => p.disk_pct), color: '#F59E0B'},
   ], {max: 100, unit: 'pct'});
 }
 
