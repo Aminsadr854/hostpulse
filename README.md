@@ -7,8 +7,6 @@ disk, and how many bytes its interfaces moved.
 Nothing is installed on the machines being watched. If you can `ssh` to it, you
 can monitor it.
 
-![panel](docs/panel.png)
-
 ## Why
 
 Most monitoring wants an agent on every box, a metrics port open, and a config
