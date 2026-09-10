@@ -53,6 +53,9 @@ const level = (p) => p === null || p === undefined ? '' : (p >= 90 ? 'bad' : p >
 let servers = [], groups = [];
 
 async function refresh() {
+  // Rebuilding the board while a card is in the air destroys the element being
+  // dragged, and the drag ends wherever it happens to be.
+  if (dragging) return;
   const r = await fetch('/api/servers');
   if (r.status === 401) { location.href = '/login'; return; }
   const d = await r.json();
@@ -113,12 +116,14 @@ function bandFor({group, list}) {
 
 /* ---------------------------------------------------------------- drag */
 let dragId = null;
+let dragging = false;
 
 function wireDrag(el, s) {
   el.draggable = true;
   el.dataset.id = s.id;
   el.addEventListener('dragstart', (e) => {
     dragId = s.id;
+    dragging = true;      // hold the periodic refresh off until this is over
     el.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'move';
     // Firefox will not start a drag without data on the transfer
@@ -127,6 +132,7 @@ function wireDrag(el, s) {
   el.addEventListener('dragend', () => {
     el.classList.remove('dragging');
     dragId = null;
+    dragging = false;
     $$('.cards').forEach(c => c.classList.remove('drop-on'));
   });
 }
@@ -170,7 +176,12 @@ async function saveLayout() {
     box.querySelectorAll('.card').forEach(card =>
       order.push({id: Number(card.dataset.id), group_id: gid}));
   });
-  await post('/api/layout', {groups: groups.map(g => g.id), servers: order});
+  const {ok, data} = await post('/api/layout',
+    {groups: groups.map(g => g.id), servers: order});
+  if (!ok) {
+    alert('چیدمان ذخیره نشد: ' + (data.error || 'خطای ناشناخته'));
+  }
+  dragging = false;
   refresh();
 }
 

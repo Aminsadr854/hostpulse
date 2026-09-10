@@ -155,9 +155,12 @@ def add_server(con, **f):
 
 def update_server(con, sid, **f):
     sets, vals = [], []
+    # group_id is the one field whose None is a value rather than an omission:
+    # "no group" has to be storable, or a server can be filed but never unfiled.
+    nullable = ("group_id",)
     for k in ("name", "host", "port", "username", "auth", "secret",
               "passphrase", "enabled", "group_id", "position"):
-        if k in f and f[k] is not None:
+        if k in f and (f[k] is not None or k in nullable):
             sets.append(f"{k}=?")
             vals.append(f[k])
     if not sets:

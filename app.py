@@ -289,7 +289,11 @@ async def api_edit(request):
     con = request.app["con"]
     sid = int(request.match_info["sid"])
     body = await request.json()
-    fields = {k: body[k] for k in ("name", "host", "port", "username", "enabled")
+    # group_id belongs here too. Leaving it out meant the group chosen in the
+    # form was accepted, sent, and silently discarded - the request succeeded,
+    # so nothing anywhere said the change had not been made.
+    fields = {k: body[k] for k in ("name", "host", "port", "username", "enabled",
+                                   "group_id")
               if k in body}
     if body.get("secret"):
         try:
