@@ -38,14 +38,14 @@ const fmtBits = (bytesPerSec) => {
           : Math.round(v)) + ' ' + u[i];
 };
 const fmtRate = fmtBits;
-const fmtPct = (p) => p === null || p === undefined ? '—' : p.toFixed(0) + '٪';
+const fmtPct = (p) => p === null || p === undefined ? '—' : p.toFixed(0) + t('pct');
 /* Mostly words, so the digits are wrapped and the rest is left to Samim -
    otherwise "روز" and "ساعت" are drawn by a font that has no Persian. */
 const fmtUptime = (s) => {
   if (!s) return '—';
   const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600);
   const n = (v) => `<span class="n">${v}</span>`;
-  return d > 0 ? `${n(d)} روز ${n(h)} ساعت` : `${n(h)} ساعت`;
+  return d > 0 ? `${n(d)} ${t('days')} ${n(h)} ${t('hours')}` : `${n(h)} ${t('hours')}`;
 };
 const level = (p) => p === null || p === undefined ? '' : (p >= 90 ? 'bad' : p >= 75 ? 'warn' : '');
 
@@ -92,17 +92,17 @@ function bandFor({group, list}) {
   wrap.className = 'group';
   const sums = group
     ? `<div class="group-sums">
-         <span>امروز <b>${fmtBytes(group.today)}</b></span>
-         <span>۷ روز <b>${fmtBytes(group.week)}</b></span>
-         <span>۳۰ روز <b>${fmtBytes(group.month)}</b></span>
-         <span>پهنای باند ${arrow('down')} <b>${fmtBits(group.rx_rate)}</b></span>
+         <span>${t('today')} <b>${fmtBytes(group.today)}</b></span>
+         <span>${t('week')} <b>${fmtBytes(group.week)}</b></span>
+         <span>${t('month')} <b>${fmtBytes(group.month)}</b></span>
+         <span>${t('bandwidth')} ${arrow('down')} <b>${fmtBits(group.rx_rate)}</b></span>
        </div>` : '';
   wrap.innerHTML = `
     <div class="group-head">
       <div class="title">
-        <h2>${esc(group ? group.name : 'بدون گروه')}</h2>
-        <span class="count">${group ? `${group.online} از ${group.count} آنلاین`
-                                    : `${list.length} سرور`}</span>
+        <h2>${esc(group ? group.name : t('ungrouped'))}</h2>
+        <span class="count">${group ? t('of_online', group.online, group.count)
+                                    : t('n_servers', list.length)}</span>
       </div>
       ${sums}
     </div>
@@ -179,7 +179,7 @@ async function saveLayout() {
   const {ok, data} = await post('/api/layout',
     {groups: groups.map(g => g.id), servers: order});
   if (!ok) {
-    alert('چیدمان ذخیره نشد: ' + (data.error || 'خطای ناشناخته'));
+    alert(t('layout_failed', data.error || t('unknown')));
   }
   dragging = false;
   refresh();
@@ -199,11 +199,11 @@ function cardFor(s) {
       <div class="left">
         <span class="dot ${s.online ? 'on' : 'off'}" aria-hidden="true"></span>
         <span class="name">${esc(s.name)}</span>
-        <span class="state">${s.online ? 'آنلاین' : 'آفلاین'}</span>
+        <span class="state">${s.online ? t('online') : t('offline')}</span>
       </div>
       <div class="head-right">
         <span class="host">${esc(s.username)}@${esc(s.host)}:${s.port}</span>
-        <button class="icon edit" title="ویرایش و حذف" aria-label="ویرایش ${esc(s.name)}">
+        <button class="icon edit" title="${t('g_edit')}" aria-label="${t('g_edit')}">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                stroke-width="2" stroke-linecap="round" aria-hidden="true">
             <circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/>
@@ -212,18 +212,18 @@ function cardFor(s) {
       </div>
     </div>
     <div class="bars">
-      ${bar('پردازنده', s.cpu_pct)}
-      ${bar('حافظه', s.mem_pct)}
-      ${bar('دیسک', s.disk_pct)}
+      ${bar(t('cpu'), s.cpu_pct)}
+      ${bar(t('memory'), s.mem_pct)}
+      ${bar(t('disk'), s.disk_pct)}
     </div>
     <div class="rate">
       <span>${arrow('down')} <b>${fmtRate(s.rx_rate)}</b></span>
       <span>${arrow('up')} <b>${fmtRate(s.tx_rate)}</b></span>
     </div>
     <div class="traffic">
-      <div><span>امروز</span><b>${fmtBytes(s.today.total)}</b></div>
-      <div><span>۷ روز</span><b>${fmtBytes(s.week.total)}</b></div>
-      <div><span>۳۰ روز</span><b>${fmtBytes(s.month.total)}</b></div>
+      <div><span>${t('today')}</span><b>${fmtBytes(s.today.total)}</b></div>
+      <div><span>${t('week')}</span><b>${fmtBytes(s.week.total)}</b></div>
+      <div><span>${t('month')}</span><b>${fmtBytes(s.month.total)}</b></div>
     </div>
     ${s.last_error && !s.online ? `<div class="err">${esc(s.last_error)}</div>` : ''}`;
   el.addEventListener('click', (e) => {
@@ -269,14 +269,14 @@ async function loadDetail() {
   const s = d.server;
   $('#d-name').textContent = s.name;
   $('#d-stats').innerHTML = `
-    <div><span>وضعیت</span><b style="color:${s.online ? 'var(--ok)' : 'var(--bad)'}">${s.online ? 'آنلاین' : 'آفلاین'}</b></div>
-    <div><span>پردازنده</span><b>${fmtPct(s.cpu_pct)}</b></div>
-    <div><span>حافظه</span><b>${fmtPct(s.mem_pct)} از ${fmtBytes(s.mem_total)}</b></div>
-    <div><span>دیسک</span><b>${fmtPct(s.disk_pct)} از ${fmtBytes(s.disk_total)}</b></div>
-    <div><span>بار سیستم</span><b>${s.load1 === null || s.load1 === undefined ? '—' : s.load1.toFixed(2)}</b></div>
-    <div><span>روشن بوده</span><b>${fmtUptime(s.uptime)}</b></div>
-    <div><span>ترافیک امروز</span><b>${fmtBytes(s.today.rx)} / ${fmtBytes(s.today.tx)}</b></div>
-    <div><span>ترافیک ۳۰ روز</span><b>${fmtBytes(s.month.total)}</b></div>`;
+    <div><span>${t('status')}</span><b style="color:${s.online ? 'var(--ok)' : 'var(--bad)'}">${s.online ? t('online') : t('offline')}</b></div>
+    <div><span>${t('cpu')}</span><b>${fmtPct(s.cpu_pct)}</b></div>
+    <div><span>${t('memory')}</span><b>${fmtPct(s.mem_pct)} / ${fmtBytes(s.mem_total)}</b></div>
+    <div><span>${t('disk')}</span><b>${fmtPct(s.disk_pct)} / ${fmtBytes(s.disk_total)}</b></div>
+    <div><span>${t('load')}</span><b>${s.load1 === null || s.load1 === undefined ? '—' : s.load1.toFixed(2)}</b></div>
+    <div><span>${t('uptime')}</span><b>${fmtUptime(s.uptime)}</b></div>
+    <div><span>${t('traffic_today')}</span><b>${fmtBytes(s.today.rx)} / ${fmtBytes(s.today.tx)}</b></div>
+    <div><span>${t('traffic_month')}</span><b>${fmtBytes(s.month.total)}</b></div>`;
 
   const pts = d.points;
   const step = d.step || 60;              // seconds each point covers
@@ -296,8 +296,8 @@ async function loadDetail() {
   const labels = pts.map(p => fmt(p.ts));
 
   draw('c-cpu', labels, [
-    {label: 'پردازنده ٪', data: pts.map(p => p.cpu_pct), color: '#38BDF8'},
-    {label: 'حافظه ٪', data: pts.map(p => p.mem_pct), color: '#22C55E'},
+    {label: t('cpu'), data: pts.map(p => p.cpu_pct), color: '#38BDF8'},
+    {label: t('memory'), data: pts.map(p => p.mem_pct), color: '#22C55E'},
   ], {max: 100, unit: 'pct'});
 
   // Always a rate, and always a line. Throughput is a continuous quantity, so
@@ -305,22 +305,21 @@ async function loadDetail() {
   // an hourly point and a minute point sit on the same axis and can be
   // compared, which bars of raw bucket totals could not.
   draw('c-net', labels, [
-    {label: 'دریافت', data: pts.map(p => (p.rx_bytes || 0) / step), color: '#38BDF8', fill: true},
-    {label: 'ارسال', data: pts.map(p => (p.tx_bytes || 0) / step), color: '#A78BFA', fill: true},
+    {label: t('download'), data: pts.map(p => (p.rx_bytes || 0) / step), color: '#38BDF8', fill: true},
+    {label: t('upload'), data: pts.map(p => (p.tx_bytes || 0) / step), color: '#A78BFA', fill: true},
   ], {unit: 'rate'});
-  $('#net-title').textContent = 'پهنای باند (بیت بر ثانیه)' +
-    (d.bucket === 'day' ? ' — میانگین روزانه'
-     : d.bucket === 'hour' ? ' — میانگین ساعتی' : '');
+  $('#net-title').textContent = t('bw_bits') +
+    (d.bucket === 'day' ? t('avg_daily') : d.bucket === 'hour' ? t('avg_hourly') : '');
 
   draw('c-disk', labels, [
-    {label: 'دیسک ٪', data: pts.map(p => p.disk_pct), color: '#F59E0B'},
+    {label: t('disk'), data: pts.map(p => p.disk_pct), color: '#F59E0B'},
   ], {max: 100, unit: 'pct'});
 }
 
 function unitFmt(unit) {
   if (unit === 'rate') return fmtBits;      // throughput, in bits
   if (unit === 'bytes') return fmtBytes;    // volume, in bytes
-  return (v) => (v === null || v === undefined) ? '—' : v.toFixed(1) + '٪';
+  return (v) => (v === null || v === undefined) ? '—' : v.toFixed(1) + t('pct');
 }
 
 function draw(canvasId, labels, sets, opts = {}) {
@@ -370,13 +369,13 @@ function draw(canvasId, labels, sets, opts = {}) {
 function renderGroups() {
   $('#g-list').innerHTML = groups.map(g => `
     <div class="grow-row" data-gid="${g.id}">
-      <input value="${esc(g.name)}" aria-label="نام گروه">
-      <button class="icon del" title="حذف گروه" aria-label="حذف ${esc(g.name)}">
+      <input value="${esc(g.name)}" aria-label="${t('g_name')}">
+      <button class="icon del" title="${t('g_del')}" aria-label="${t('g_del')}">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
              stroke-width="2" stroke-linecap="round" aria-hidden="true">
           <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
       </button>
-    </div>`).join('') || '<p class="sub">هنوز گروهی نساخته‌ای.</p>';
+    </div>`).join('') || `<p class="sub">${t('g_none')}</p>`;
 
   $$('#g-list .grow-row input').forEach(inp => {
     const gid = inp.closest('.grow-row').dataset.gid;
@@ -384,14 +383,13 @@ function renderGroups() {
     // rename is one decision, not one per letter.
     inp.addEventListener('change', async () => {
       const {ok, data} = await post(`/api/groups/${gid}`, {name: inp.value});
-      if (!ok) gmsg(data.error || 'تغییر نام نشد'); else refresh();
+      if (!ok) gmsg(data.error || t('g_rename_failed')); else refresh();
     });
   });
   $$('#g-list .del').forEach(b => b.addEventListener('click', async () => {
     const row = b.closest('.grow-row');
     const name = row.querySelector('input').value;
-    if (!confirm(`گروه «${name}» حذف شود؟ سرورهایش پاک نمی‌شوند، فقط بی‌گروه می‌شوند.`))
-      return;
+    if (!confirm(t('g_confirm_del', name))) return;
     await post(`/api/groups/${row.dataset.gid}/delete`, {});
     await refresh();
     renderGroups();
@@ -405,7 +403,7 @@ function gmsg(text) {
 }
 
 function fillGroupSelect(selected) {
-  $('#f-group').innerHTML = '<option value="">بدون گروه</option>' +
+  $('#f-group').innerHTML = `<option value="">${t('ungrouped')}</option>` +
     groups.map(g => `<option value="${g.id}" ${g.id === selected ? 'selected' : ''}
       >${esc(g.name)}</option>`).join('');
 }
@@ -415,7 +413,7 @@ let editing = null, authMode = 'password';
 
 function openForm(server) {
   editing = server || null;
-  $('#f-title').textContent = server ? 'ویرایش سرور' : 'افزودن سرور';
+  $('#f-title').textContent = server ? t('edit_title') : t('add_title');
   $('#f-name').value = server ? server.name : '';
   $('#f-host').value = server ? server.host : '';
   $('#f-port').value = server ? server.port : 22;
@@ -469,9 +467,9 @@ $('#groups-btn').addEventListener('click', () => {
 });
 $('#g-add').addEventListener('click', async () => {
   const name = $('#g-name').value.trim();
-  if (!name) { gmsg('نام گروه لازم است'); return; }
+  if (!name) { gmsg(t('g_need_name')); return; }
   const {ok, data} = await post('/api/groups', {name});
-  if (!ok) { gmsg(data.error || 'ساخته نشد'); return; }
+  if (!ok) { gmsg(data.error || t('g_failed')); return; }
   $('#g-name').value = '';
   gmsg('');
   await refresh();
@@ -500,14 +498,14 @@ $$('.seg button').forEach(b => b.addEventListener('click', () => {
 }));
 
 $('#f-test').addEventListener('click', async () => {
-  msg('در حال تست…');
+  msg(t('testing'));
   const {group_id, ...creds} = formBody();
   const {data} = await post('/api/test', creds);
   if (data.ok) {
-    msg(`وصل شد — ${data.hostname || ''} · ${data.cores || '?'} هسته · ` +
-        `${fmtBytes(data.mem_total)} رم · ${fmtBytes(data.disk_total)} دیسک`, true);
+    msg(`${t('connected')} — ${data.hostname || ''} · ${data.cores || '?'} ${t('cores')} · ` +
+        `${fmtBytes(data.mem_total)} ${t('ram')} · ${fmtBytes(data.disk_total)} ${t('disk')}`, true);
   } else {
-    msg(data.error || 'اتصال ناموفق');
+    msg(data.error || t('e_conn'));
   }
 });
 
@@ -516,19 +514,18 @@ $('#f-save').addEventListener('click', async () => {
   if (!editing) {
     const twin = servers.find(s => s.host === body.host && s.port === body.port &&
                                    s.username === body.username);
-    if (twin && !confirm(`«${twin.name}» همین حالا همین آدرس را دارد. باز هم اضافه شود؟`))
-      return;
+    if (twin && !confirm(t('confirm_twin', twin.name))) return;
   }
   if (editing && !body.secret) { delete body.secret; delete body.auth; }
   const url = editing ? `/api/servers/${editing.id}` : '/api/servers';
   const {ok, data} = await post(url, body);
-  if (!ok) { msg(data.error || 'ذخیره نشد'); return; }
+  if (!ok) { msg(data.error || t('e_save')); return; }
   $('#form').hidden = true;
   refresh();
 });
 
 $('#f-delete').addEventListener('click', async () => {
-  if (!editing || !confirm(`«${editing.name}» حذف شود؟ تاریخچه‌اش هم پاک می‌شود.`)) return;
+  if (!editing || !confirm(t('confirm_del', editing.name))) return;
   await post(`/api/servers/${editing.id}/delete`, {});
   $('#form').hidden = true;
   refresh();
@@ -537,6 +534,13 @@ $('#f-delete').addEventListener('click', async () => {
 // Reaching here means the file parsed and every handler is bound; the boot
 // watchdog in the page checks for it.
 window.__hostpulseReady = true;
+
+applyLang();
+document.getElementById('lang-btn').addEventListener('click', () => {
+  setLang(LANG === 'fa' ? 'en' : 'fa');
+  refresh();                       // card and chart text is built in JS
+  if (detailId) loadDetail();
+});
 
 refresh();
 setInterval(() => { refresh(); if (detailId) loadDetail(); }, 30000);

@@ -21,7 +21,7 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
            stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
         <path d="M12 5v14M5 12h14"/></svg>
-      افزودن سرور
+      <span data-i18n="add_server">افزودن سرور</span>
     </button>
     <button id="groups-btn" title="گروه‌ها">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -30,27 +30,28 @@
         <rect x="14" y="3" width="7" height="7" rx="1.5"/>
         <rect x="3" y="14" width="7" height="7" rx="1.5"/>
         <rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-      گروه‌ها
+      <span data-i18n="groups">گروه‌ها</span>
     </button>
-    <a href="/logout" class="btn">خروج</a>
+    <button id="lang-btn" title="زبان / Language">English</button>
+    <a href="/logout" class="btn" data-i18n="logout">خروج</a>
   </div>
 </header>
 
 <main>
   <div id="board"></div>
-  <p id="empty" class="empty" hidden>هنوز سروری اضافه نشده. با دکمهٔ «افزودن سرور» شروع کن.</p>
+  <p id="empty" class="empty" hidden data-i18n="empty">هنوز سروری اضافه نشده.</p>
 </main>
 
 <!-- groups -->
 <div id="groupsheet" class="modal" hidden>
   <div class="sheet">
-    <div class="sheet-head"><h2>گروه‌ها</h2>
-      <button class="close" aria-label="بستن">بستن</button></div>
-    <p class="sub">گروه بساز و بعد کارت سرورها را با کشیدن داخلشان بگذار.</p>
+    <div class="sheet-head"><h2 data-i18n="g_title">گروه‌ها</h2>
+      <button class="close" data-i18n="close">بستن</button></div>
+    <p class="sub" data-i18n="g_sub">گروه بساز و بعد کارت سرورها را با کشیدن داخلشان بگذار.</p>
     <div class="row">
-      <label class="grow">نام گروه تازه
-        <input id="g-name" placeholder="مثلاً سرورهای کردیتی"></label>
-      <button id="g-add" class="primary">بساز</button>
+      <label class="grow"><span data-i18n="g_new">نام گروه تازه</span>
+        <input id="g-name" data-i18n-ph="g_new_ph" placeholder="مثلاً سرورهای کردیتی"></label>
+      <button id="g-add" class="primary" data-i18n="g_make">بساز</button>
     </div>
     <div id="g-list" class="glist"></div>
     <div id="g-msg" class="msg" hidden></div>
@@ -70,16 +71,15 @@
           <button data-range="7d">۷ روز</button>
           <button data-range="30d">۳۰ روز</button>
         </span>
-        <button class="close" aria-label="بستن">بستن</button>
+        <button class="close" data-i18n="close">بستن</button>
       </div>
     </div>
     <div id="d-stats" class="stats"></div>
-    <p id="d-thin" class="thin" hidden>هنوز داده‌ی کافی جمع نشده — هر دقیقه یک نمونه
-      گرفته می‌شود، پس نمودارها در ساعت اول کم‌جان‌اند.</p>
+    <p id="d-thin" class="thin" hidden data-i18n="thin"></p>
     <div class="charts">
-      <div class="chart"><h3>پردازنده و حافظه (٪)</h3><canvas id="c-cpu"></canvas></div>
+      <div class="chart"><h3 data-i18n="cpu_mem">پردازنده و حافظه (٪)</h3><canvas id="c-cpu"></canvas></div>
       <div class="chart"><h3 id="net-title">پهنای باند</h3><canvas id="c-net"></canvas></div>
-      <div class="chart"><h3>مصرف دیسک (٪)</h3><canvas id="c-disk"></canvas></div>
+      <div class="chart"><h3 data-i18n="disk_use">مصرف دیسک (٪)</h3><canvas id="c-disk"></canvas></div>
     </div>
   </div>
 </div>
@@ -88,36 +88,36 @@
 <div id="form" class="modal" hidden>
   <div class="sheet">
     <div class="sheet-head"><h2 id="f-title">افزودن سرور</h2>
-      <button class="close" aria-label="بستن">بستن</button></div>
-    <label>نام <input id="f-name" placeholder="مثلاً سرور آلمان"></label>
+      <button class="close" data-i18n="close">بستن</button></div>
+    <label><span data-i18n="f_name">نام</span> <input id="f-name" data-i18n-ph="f_name_ph" placeholder="مثلاً سرور آلمان"></label>
     <div class="row">
-      <label class="grow">آدرس یا آی‌پی <input id="f-host" dir="ltr" placeholder="1.2.3.4"></label>
-      <label class="narrow">پورت <input id="f-port" dir="ltr" value="22"></label>
+      <label class="grow"><span data-i18n="f_host">آدرس</span> <input id="f-host" dir="ltr" placeholder="1.2.3.4"></label>
+      <label class="narrow"><span data-i18n="f_port">پورت</span> <input id="f-port" dir="ltr" value="22"></label>
     </div>
-    <label>نام کاربری <input id="f-user" dir="ltr" value="root"></label>
-    <label>گروه <select id="f-group"></select></label>
+    <label><span data-i18n="f_user">نام کاربری</span> <input id="f-user" dir="ltr" value="root"></label>
+    <label><span data-i18n="f_group">گروه</span> <select id="f-group"></select></label>
 
     <div class="tabs">
-      <button data-auth="password" class="on">رمز عبور</button>
-      <button data-auth="key">کلید خصوصی SSH</button>
+      <button data-auth="password" class="on" data-i18n="auth_password">رمز عبور</button>
+      <button data-auth="key" data-i18n="auth_key">کلید خصوصی SSH</button>
     </div>
 
     <div id="pane-password">
-      <label>رمز عبور <input id="f-password" type="password" dir="ltr"></label>
+      <label><span data-i18n="auth_password">رمز عبور</span> <input id="f-password" type="password" dir="ltr"></label>
     </div>
     <div id="pane-key" hidden>
-      <label>کلید خصوصی
+      <label><span data-i18n="f_key">کلید خصوصی</span>
         <textarea id="f-key" dir="ltr" rows="7"
           placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"></textarea></label>
-      <label>عبارت عبور کلید <span class="hint">(اگر کلید رمز دارد)</span>
+      <label><span data-i18n="f_passphrase">عبارت عبور کلید</span> <span class="hint" data-i18n="f_passphrase_hint">(اگر کلید رمز دارد)</span>
         <input id="f-passphrase" type="password" dir="ltr"></label>
     </div>
 
     <div id="f-msg" class="msg" hidden></div>
     <div class="sheet-foot">
-      <button id="f-test">تست اتصال</button>
-      <button id="f-save" class="primary">ذخیره</button>
-      <button id="f-delete" class="danger" hidden>حذف</button>
+      <button id="f-test" data-i18n="test">تست اتصال</button>
+      <button id="f-save" class="primary" data-i18n="save">ذخیره</button>
+      <button id="f-delete" class="danger" hidden data-i18n="del">حذف</button>
     </div>
   </div>
 </div>
@@ -143,6 +143,7 @@
   });
 })();
 </script>
+<script src="/static/i18n.js"></script>
 <script src="/static/chart.min.js"></script>
 <script src="/static/app.js"></script>
 </body>

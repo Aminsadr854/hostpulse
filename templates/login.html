@@ -9,11 +9,46 @@
 <body class="centre">
 <form class="card" id="f">
   <h1>hostpulse</h1>
-  <p class="sub">برای دیدن سرورها وارد شو.</p>
-  <input id="pw" type="password" placeholder="رمز عبور" autofocus dir="ltr">
+  <p class="sub" data-t="sub"></p>
+  <input id="pw" type="password" data-t="ph" autofocus dir="ltr">
   <div id="msg" class="msg" hidden></div>
-  <button class="primary" type="submit">ورود</button>
+  <button class="primary" type="submit" data-t="btn"></button>
+  <button id="lang-swap" type="button" class="linkish"></button>
 </form>
+
+<script>
+/* These two pages stand alone - no panel bundle, no chart library - so their
+   handful of strings live here rather than pulling in the whole table. */
+const L = (function () {
+  try { const s = localStorage.getItem('hostpulse.lang'); if (s === 'fa' || s === 'en') return s; }
+  catch (e) {}
+  return (navigator.language || '').startsWith('fa') ? 'fa' : 'en';
+})();
+const S = {
+  title: {fa: 'ورود — hostpulse', en: 'hostpulse'},
+  sub: {fa: 'برای دیدن سرورها وارد شو.', en: 'Sign in to see your servers.'},
+  ph: {fa: 'رمز عبور', en: 'Password'},
+  btn: {fa: 'ورود', en: 'Sign in'},
+  fail: {fa: 'ورود ناموفق', en: 'Sign-in failed'}
+};
+const tr = (k) => (S[k] || {})[L] || '';
+document.documentElement.lang = L;
+document.documentElement.dir = L === 'fa' ? 'rtl' : 'ltr';
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('[data-t]').forEach(el => {
+    if (el.tagName === 'INPUT') el.placeholder = tr(el.dataset.t);
+    else el.textContent = tr(el.dataset.t);
+  });
+  const sw = document.getElementById('lang-swap');
+  if (sw) {
+    sw.textContent = L === 'fa' ? 'English' : 'فارسی';
+    sw.addEventListener('click', () => {
+      try { localStorage.setItem('hostpulse.lang', L === 'fa' ? 'en' : 'fa'); } catch (e) {}
+      location.reload();
+    });
+  }
+});
+</script>
 <script>
 document.getElementById('f').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -23,7 +58,7 @@ document.getElementById('f').addEventListener('submit', async (e) => {
     body: JSON.stringify({password: document.getElementById('pw').value})});
   if (r.ok) { location.href = '/'; return; }
   const d = await r.json().catch(() => ({}));
-  msg.textContent = d.error || 'ورود ناموفق';
+  msg.textContent = d.error || tr('fail');
   msg.hidden = false;
 });
 </script>

@@ -222,6 +222,14 @@ button.danger:hover{filter:brightness(1.08)}
 .thin{color:var(--dim);font-size:12px;margin:0 0 var(--s2);padding:9px 12px;
   border:1px dashed var(--line-strong);border-radius:var(--r1)}
 .empty{color:var(--dim);text-align:center;padding:72px var(--s3)}
+.linkish{border:0;background:transparent;color:var(--dim);font-size:12px;
+  width:auto!important;margin-top:var(--s1)!important;min-height:auto;padding:4px}
+.linkish:hover{color:var(--accent);background:transparent}
+#lang-btn{font-size:12px;padding:7px 11px;min-height:36px}
+/* Logical properties throughout, so the layout mirrors itself when the
+   language changes instead of needing a second set of rules. */
+.val{text-align:end}
+.host{text-align:end}
 .boot-error{position:fixed;inset-inline:var(--s3);bottom:var(--s3);z-index:99;
   background:var(--bad);color:#fff;padding:12px var(--s3);border-radius:var(--r2);
   font-size:13px;box-shadow:0 8px 28px rgba(0,0,0,.4)}

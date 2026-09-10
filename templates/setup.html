@@ -8,26 +8,65 @@
 </head>
 <body class="centre">
 <form class="card" id="f">
-  <h1>اولین اجرا</h1>
-  <p class="sub">یک رمز عبور برای پنل انتخاب کن. بعداً با همین وارد می‌شوی.</p>
-  <input id="pw" type="password" placeholder="رمز عبور (حداقل ۸ نویسه)" autofocus dir="ltr">
-  <input id="pw2" type="password" placeholder="تکرار رمز عبور" dir="ltr">
+  <h1 data-t="h1"></h1>
+  <p class="sub" data-t="sub"></p>
+  <input id="pw" type="password" data-t="ph" autofocus dir="ltr">
+  <input id="pw2" type="password" data-t="ph2" dir="ltr">
   <div id="msg" class="msg" hidden></div>
-  <button class="primary" type="submit">شروع</button>
+  <button class="primary" type="submit" data-t="btn"></button>
+  <button id="lang-swap" type="button" class="linkish"></button>
 </form>
+
+<script>
+/* These two pages stand alone - no panel bundle, no chart library - so their
+   handful of strings live here rather than pulling in the whole table. */
+const L = (function () {
+  try { const s = localStorage.getItem('hostpulse.lang'); if (s === 'fa' || s === 'en') return s; }
+  catch (e) {}
+  return (navigator.language || '').startsWith('fa') ? 'fa' : 'en';
+})();
+const S = {
+  title: {fa: 'راه\u200cاندازی — hostpulse', en: 'hostpulse'},
+  h1: {fa: 'اولین اجرا', en: 'First run'},
+  sub: {fa: 'یک رمز عبور برای پنل انتخاب کن. بعداً با همین وارد می\u200cشوی.', en: 'Choose a password for the panel. You will sign in with it from now on.'},
+  ph: {fa: 'رمز عبور (حداقل ۸ نویسه)', en: 'Password (at least 8 characters)'},
+  ph2: {fa: 'تکرار رمز عبور', en: 'Repeat the password'},
+  btn: {fa: 'شروع', en: 'Start'},
+  mismatch: {fa: 'دو رمز یکسان نیستند', en: 'The two passwords do not match'},
+  short: {fa: 'رمز باید حداقل ۸ نویسه باشد', en: 'The password must be at least 8 characters'},
+  err: {fa: 'خطا', en: 'Error'}
+};
+const tr = (k) => (S[k] || {})[L] || '';
+document.documentElement.lang = L;
+document.documentElement.dir = L === 'fa' ? 'rtl' : 'ltr';
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('[data-t]').forEach(el => {
+    if (el.tagName === 'INPUT') el.placeholder = tr(el.dataset.t);
+    else el.textContent = tr(el.dataset.t);
+  });
+  const sw = document.getElementById('lang-swap');
+  if (sw) {
+    sw.textContent = L === 'fa' ? 'English' : 'فارسی';
+    sw.addEventListener('click', () => {
+      try { localStorage.setItem('hostpulse.lang', L === 'fa' ? 'en' : 'fa'); } catch (e) {}
+      location.reload();
+    });
+  }
+});
+</script>
 <script>
 document.getElementById('f').addEventListener('submit', async (e) => {
   e.preventDefault();
   const msg = document.getElementById('msg');
   const a = document.getElementById('pw').value, b = document.getElementById('pw2').value;
   const show = t => { msg.textContent = t; msg.hidden = false; };
-  if (a !== b) return show('دو رمز یکسان نیستند');
-  if (a.length < 8) return show('رمز باید حداقل ۸ نویسه باشد');
+  if (a !== b) return show(tr('mismatch'));
+  if (a.length < 8) return show(tr('short'));
   const r = await fetch('/setup', {method: 'POST',
     headers: {'Content-Type': 'application/json'}, body: JSON.stringify({password: a})});
   if (r.ok) { location.href = '/'; return; }
   const d = await r.json().catch(() => ({}));
-  show(d.error || 'خطا');
+  show(d.error || tr('err'));
 });
 </script>
 </body>
