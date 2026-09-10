@@ -3,3 +3,4 @@ venv/
 __pycache__/
 *.pyc
 static/chart.min.js
+static/fonts/

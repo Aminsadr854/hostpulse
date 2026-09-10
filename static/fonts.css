@@ -1,0 +1,20 @@
+/* Vazirmatn carries the Persian text, Fira Code the numbers.
+   Both are served from this host - a monitoring panel that cannot render
+   because a font CDN is unreachable is a monitoring panel that has failed at
+   the moment you needed it. Files are fetched once by install.sh. */
+@font-face{
+  font-family:'Vazirmatn';font-style:normal;font-weight:400;font-display:swap;
+  src:url('/static/fonts/Vazirmatn-Regular.woff2') format('woff2');
+}
+@font-face{
+  font-family:'Vazirmatn';font-style:normal;font-weight:600;font-display:swap;
+  src:url('/static/fonts/Vazirmatn-SemiBold.woff2') format('woff2');
+}
+@font-face{
+  font-family:'Fira Code';font-style:normal;font-weight:400;font-display:swap;
+  src:url('/static/fonts/FiraCode-Regular.woff2') format('woff2');
+}
+@font-face{
+  font-family:'Fira Code';font-style:normal;font-weight:500;font-display:swap;
+  src:url('/static/fonts/FiraCode-Medium.woff2') format('woff2');
+}

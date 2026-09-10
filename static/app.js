@@ -48,10 +48,19 @@ function cardFor(s) {
   el.className = 'card clickable';
   el.innerHTML = `
     <div class="card-head">
-      <div><span class="dot ${s.online ? 'on' : 'off'}"></span><span class="name">${esc(s.name)}</span></div>
+      <div class="left">
+        <span class="dot ${s.online ? 'on' : 'off'}" aria-hidden="true"></span>
+        <span class="name">${esc(s.name)}</span>
+        <span class="state">${s.online ? 'آنلاین' : 'آفلاین'}</span>
+      </div>
       <div class="head-right">
         <span class="host">${esc(s.username)}@${esc(s.host)}:${s.port}</span>
-        <button class="icon edit" title="ویرایش و حذف">⋯</button>
+        <button class="icon edit" title="ویرایش و حذف" aria-label="ویرایش ${esc(s.name)}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/>
+            <circle cx="12" cy="19" r="1.6"/></svg>
+        </button>
       </div>
     </div>
     <div class="bars">
@@ -59,7 +68,10 @@ function cardFor(s) {
       ${bar('حافظه', s.mem_pct)}
       ${bar('دیسک', s.disk_pct)}
     </div>
-    <div class="rate">↓ ${fmtRate(s.rx_rate)} &nbsp; ↑ ${fmtRate(s.tx_rate)}</div>
+    <div class="rate">
+      <span>${arrow('down')} <b>${fmtRate(s.rx_rate)}</b></span>
+      <span>${arrow('up')} <b>${fmtRate(s.tx_rate)}</b></span>
+    </div>
     <div class="traffic">
       <div><span>امروز</span><b>${fmtBytes(s.today.total)}</b></div>
       <div><span>۷ روز</span><b>${fmtBytes(s.week.total)}</b></div>
@@ -73,7 +85,17 @@ function cardFor(s) {
   return el;
 }
 
-const esc = (t) => String(t === null || t === undefined ? '' : t)
+/* Direction arrows as SVG rather than glyphs: the checklist rules out
+   pictographs standing in for icons, and an arrow glyph in an RTL paragraph
+   is also at the mercy of bidi reordering. */
+const arrow = (dir) => `<svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+  stroke="${dir === 'down' ? 'var(--rx)' : 'var(--tx)'}" stroke-width="2.4"
+  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
+  style="vertical-align:-1px">${dir === 'down'
+    ? '<path d="M12 5v14M19 12l-7 7-7-7"/>'
+    : '<path d="M12 19V5M5 12l7-7 7 7"/>'}</svg>`;
+
+const esc = (t) = String(t === null || t === undefined ? '' : t)
   .replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 
 /* -------------------------------------------------------------- detail */
@@ -107,7 +129,7 @@ async function loadDetail() {
     <div><span>دیسک</span><b>${fmtPct(s.disk_pct)} از ${fmtBytes(s.disk_total)}</b></div>
     <div><span>بار سیستم</span><b>${s.load1 === null || s.load1 === undefined ? '—' : s.load1.toFixed(2)}</b></div>
     <div><span>روشن بوده</span><b>${fmtUptime(s.uptime)}</b></div>
-    <div><span>ترافیک امروز</span><b>↓${fmtBytes(s.today.rx)} ↑${fmtBytes(s.today.tx)}</b></div>
+    <div><span>ترافیک امروز</span><b>${fmtBytes(s.today.rx)} / ${fmtBytes(s.today.tx)}</b></div>
     <div><span>ترافیک ۳۰ روز</span><b>${fmtBytes(s.month.total)}</b></div>`;
 
   const pts = d.points;

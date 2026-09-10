@@ -8,10 +8,22 @@
 </head>
 <body>
 <header>
-  <h1>hostpulse</h1>
+  <div class="brand">
+    <!-- an activity pulse: the one mark that says what this thing is -->
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+    </svg>
+    <h1>hostpulse</h1>
+  </div>
   <div class="actions">
-    <button id="add-btn" class="primary">افزودن سرور</button>
-    <a href="/logout" class="ghost">خروج</a>
+    <button id="add-btn" class="primary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+        <path d="M12 5v14M5 12h14"/></svg>
+      افزودن سرور
+    </button>
+    <a href="/logout" class="btn">خروج</a>
   </div>
 </header>
 
@@ -33,7 +45,7 @@
           <button data-range="7d">۷ روز</button>
           <button data-range="30d">۳۰ روز</button>
         </span>
-        <button class="ghost close">بستن</button>
+        <button class="close" aria-label="بستن">بستن</button>
       </div>
     </div>
     <div id="d-stats" class="stats"></div>
@@ -51,7 +63,7 @@
 <div id="form" class="modal" hidden>
   <div class="sheet">
     <div class="sheet-head"><h2 id="f-title">افزودن سرور</h2>
-      <button class="ghost close">بستن</button></div>
+      <button class="close" aria-label="بستن">بستن</button></div>
     <label>نام <input id="f-name" placeholder="مثلاً سرور آلمان"></label>
     <div class="row">
       <label class="grow">آدرس یا آی‌پی <input id="f-host" dir="ltr" placeholder="1.2.3.4"></label>
@@ -77,7 +89,7 @@
 
     <div id="f-msg" class="msg" hidden></div>
     <div class="sheet-foot">
-      <button id="f-test" class="ghost">تست اتصال</button>
+      <button id="f-test">تست اتصال</button>
       <button id="f-save" class="primary">ذخیره</button>
       <button id="f-delete" class="danger" hidden>حذف</button>
     </div>
