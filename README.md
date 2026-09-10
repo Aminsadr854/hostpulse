@@ -20,8 +20,11 @@ hostpulse is one process and one SQLite file. Adding a server is a form.
 
 ## What it shows
 
-- **Traffic** — today, last 7 days, last 30 days, in and out separately.
-- **Bandwidth** — current rate, and a graph over 24 hours / 7 days / 30 days.
+- **Traffic** — today, last 7 days, last 30 days, in and out separately, in
+  bytes, because that is the unit a provider bills in.
+- **Bandwidth** — current throughput in bits per second, and a graph over
+  1 hour / 6 hours / 24 hours / 7 days / 30 days. Rates use the 1000-step
+  network convention (a 100 Mbps port reads as 100 Mbps, not 95).
 - **Resources** — processor, memory and disk, live and over time.
 - Load average, uptime, and the last error if a server stops answering.
 

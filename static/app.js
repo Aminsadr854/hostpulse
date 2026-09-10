@@ -21,8 +21,23 @@ const fmtBytes = (b) => {
   while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
   return (v < 10 && i > 0 ? v.toFixed(1) : Math.round(v)) + ' ' + u[i];
 };
-const fmtRate = (bps) => bps === null || bps === undefined
-  ? '—' : fmtBytes(bps) + '/s';
+/* Throughput is quoted in bits per second - that is what a link is sold as and
+   what every other network tool shows - so the byte counters are multiplied by
+   eight here.
+   
+   The unit step is 1000, not 1024. Storage is measured in powers of two and
+   line rate in powers of ten; a "100 Mbps" port means 100,000,000 bits, and
+   dividing by 1024 would quietly report it as 95. Volume totals stay in bytes
+   below, because that is the unit a provider bills in. */
+const fmtBits = (bytesPerSec) => {
+  if (bytesPerSec === null || bytesPerSec === undefined) return '—';
+  let v = Number(bytesPerSec) * 8, i = 0;
+  const u = ['bps', 'kbps', 'Mbps', 'Gbps', 'Tbps'];
+  while (v >= 1000 && i < u.length - 1) { v /= 1000; i++; }
+  return (v < 10 && i > 0 ? v.toFixed(2) : v < 100 && i > 0 ? v.toFixed(1)
+          : Math.round(v)) + ' ' + u[i];
+};
+const fmtRate = fmtBits;
 const fmtPct = (p) => p === null || p === undefined ? '—' : p.toFixed(0) + '٪';
 /* Mostly words, so the digits are wrapped and the rest is left to Samim -
    otherwise "روز" and "ساعت" are drawn by a font that has no Persian. */
@@ -171,14 +186,14 @@ async function loadDetail() {
       {label: 'دریافت', data: pts.map(p => (p.rx_bytes || 0) / R.step), color: '#5b9dff', fill: true},
       {label: 'ارسال', data: pts.map(p => (p.tx_bytes || 0) / R.step), color: '#c48bff', fill: true},
     ], {unit: 'rate'});
-    $('#net-title').textContent = 'پهنای باند';
+    $('#net-title').textContent = 'پهنای باند (بیت بر ثانیه)';
   } else {
     draw('c-net', labels, [
       {label: 'دریافت', data: pts.map(p => p.rx_bytes || 0), color: '#5b9dff'},
       {label: 'ارسال', data: pts.map(p => p.tx_bytes || 0), color: '#c48bff'},
     ], {unit: 'bytes', bars: true, stacked: true});
     $('#net-title').textContent =
-      R.bucket === 'day' ? 'ترافیک هر روز' : 'ترافیک هر ساعت';
+      R.bucket === 'day' ? 'ترافیک هر روز (بایت)' : 'ترافیک هر ساعت (بایت)';
   }
 
   draw('c-disk', labels, [
@@ -187,8 +202,8 @@ async function loadDetail() {
 }
 
 function unitFmt(unit) {
-  if (unit === 'rate') return fmtRate;
-  if (unit === 'bytes') return fmtBytes;
+  if (unit === 'rate') return fmtBits;      // throughput, in bits
+  if (unit === 'bytes') return fmtBytes;    // volume, in bytes
   return (v) => (v === null || v === undefined) ? '—' : v.toFixed(1) + '٪';
 }
 
