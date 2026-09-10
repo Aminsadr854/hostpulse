@@ -9,6 +9,10 @@ Environment=HOSTPULSE_BIND=127.0.0.1
 Environment=HOSTPULSE_PORT=8899
 Environment=HOSTPULSE_DB=/opt/hostpulse/data/hostpulse.db
 Environment=HOSTPULSE_KEY=/opt/hostpulse/data/secret.key
+# Where a day starts, in minutes east of UTC. Unset, the host's own timezone
+# is used - which on a server left at UTC means "today" resets at midnight in
+# London rather than where you are. Tehran is 210.
+#Environment=HOSTPULSE_TZ_OFFSET=210
 ExecStart=/opt/hostpulse/venv/bin/python /opt/hostpulse/app.py
 Restart=always
 RestartSec=5

@@ -183,7 +183,7 @@ def _summary(con, s):
     last = db.latest(con, s["id"])
     rx_rate, tx_rate = db.latest_rate(con, s["id"])
     now = int(time.time())
-    day = now // 86400 * 86400
+    day = db.day_start(now)
     online = bool(s["last_ok"] and now - s["last_ok"] < 180)
     out = {
         **s,

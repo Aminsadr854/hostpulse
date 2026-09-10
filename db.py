@@ -17,6 +17,28 @@ RAW_KEEP_HOURS = 48          # minute samples
 HOURLY_KEEP_DAYS = 120       # hourly rollups
 # daily rollups are kept for ever
 
+# Where a day starts, in minutes east of UTC.
+#
+# "Traffic today" is a claim about a calendar day, and whose calendar it is
+# matters: bucketing on UTC midnight means a panel in Tehran resets its daily
+# figure at half past three in the morning, and a month's worth of daily bars
+# are each three and a half hours out of step with the days they are labelled
+# with. Set HOSTPULSE_TZ_OFFSET to the offset you keep (Tehran is 210), or
+# leave it and the host's own timezone is used.
+def _default_offset():
+    import time as _t
+    return -(_t.altzone if _t.daylight and _t.localtime().tm_isdst else _t.timezone) // 60
+
+
+TZ_OFFSET_MIN = int(os.environ.get("HOSTPULSE_TZ_OFFSET", _default_offset()))
+_OFFSET = TZ_OFFSET_MIN * 60
+
+
+def day_start(ts=None):
+    """The most recent local midnight, as a unix timestamp."""
+    ts = int(ts if ts is not None else time.time())
+    return ((ts + _OFFSET) // 86400) * 86400 - _OFFSET
+
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS groups (
@@ -309,15 +331,15 @@ def traffic_total(con, sid, since, until=None):
         (sid, since, until)).fetchone()
     rx, tx = row["rx"], row["tx"]
     # today has no daily rollup yet, so add what the raw samples hold
-    day_start = int(time.time()) // 86400 * 86400
-    if until >= day_start:
+    today = day_start()
+    if until >= today:
         # Inclusive at the top: a sample written in the same second as the
         # query would otherwise be left out, which showed today's traffic as
         # zero right after a poll.
         r2 = con.execute(
             """SELECT COALESCE(SUM(rx_delta),0) rx, COALESCE(SUM(tx_delta),0) tx
                FROM samples WHERE server_id=? AND ts>=? AND ts<=?""",
-            (sid, max(since, day_start), until)).fetchone()
+            (sid, max(since, today), until)).fetchone()
         rx += r2["rx"]
         tx += r2["tx"]
     return {"rx": rx, "tx": tx, "total": rx + tx}
@@ -345,16 +367,33 @@ def roll_up(con, now=None):
         GROUP BY server_id, (ts/3600)*3600
     """, ((now // 3600) * 3600,))
 
-    # hour -> day
+    # hour -> day, on local day boundaries
     con.execute("""
         INSERT OR REPLACE INTO rollups
             (server_id,bucket,ts,cpu_pct,mem_pct,disk_pct,rx_bytes,tx_bytes,samples)
-        SELECT server_id, 'day', (ts/86400)*86400,
+        SELECT server_id, 'day', ((ts + :off)/86400)*86400 - :off,
                AVG(cpu_pct), AVG(mem_pct), AVG(disk_pct),
                SUM(rx_bytes), SUM(tx_bytes), SUM(samples)
-        FROM rollups WHERE bucket='hour' AND ts < ?
-        GROUP BY server_id, (ts/86400)*86400
-    """, ((now // 86400) * 86400,))
+        FROM rollups WHERE bucket='hour' AND ts < :today
+        GROUP BY server_id, ((ts + :off)/86400)*86400 - :off
+    """, {"off": _OFFSET, "today": day_start(now)})
+
+    # A day row written under a different offset is keyed to a boundary that no
+    # longer exists, and would sit alongside the correct one for ever.
+    stale = con.execute(
+        "SELECT COUNT(*) c FROM rollups WHERE bucket='day' AND (ts + ?) % 86400 != 0",
+        (_OFFSET,)).fetchone()["c"]
+    if stale:
+        con.execute("DELETE FROM rollups WHERE bucket='day'")
+        con.execute("""
+            INSERT OR REPLACE INTO rollups
+                (server_id,bucket,ts,cpu_pct,mem_pct,disk_pct,rx_bytes,tx_bytes,samples)
+            SELECT server_id, 'day', ((ts + :off)/86400)*86400 - :off,
+                   AVG(cpu_pct), AVG(mem_pct), AVG(disk_pct),
+                   SUM(rx_bytes), SUM(tx_bytes), SUM(samples)
+            FROM rollups WHERE bucket='hour' AND ts < :today
+            GROUP BY server_id, ((ts + :off)/86400)*86400 - :off
+        """, {"off": _OFFSET, "today": day_start(now)})
 
     con.execute("DELETE FROM samples WHERE ts < ?", (now - RAW_KEEP_HOURS * 3600,))
     con.execute("DELETE FROM rollups WHERE bucket='hour' AND ts < ?",
