@@ -99,6 +99,35 @@ button.danger:hover{filter:brightness(1.08)}
 /* --------------------------------------------------------------- cards */
 .cards{display:grid;gap:var(--s2);
   grid-template-columns:repeat(auto-fill,minmax(340px,1fr))}
+
+/* a group is a band across the board, not a box - the cards stay the same
+   size whichever group they are in, so moving one does not resize it */
+.group{margin-bottom:var(--s4)}
+.group-head{display:flex;align-items:center;justify-content:space-between;
+  gap:var(--s2);margin-bottom:var(--s2);padding-bottom:7px;
+  border-bottom:1px solid var(--line);flex-wrap:wrap}
+.group-head .title{display:flex;align-items:baseline;gap:var(--s1)}
+.group-head h2{font-size:15px}
+.group-head .count{font-size:11px;color:var(--dim)}
+.group-sums{display:flex;gap:var(--s3);font-size:11px;color:var(--dim);
+  flex-wrap:wrap}
+.group-sums b{color:var(--ink);font-weight:500}
+.cards.drop-on{outline:2px dashed var(--accent);outline-offset:6px;
+  border-radius:var(--r2);min-height:64px}
+.cards.empty-slot{min-height:64px}
+.card.dragging{opacity:.4}
+.card[draggable="true"]{cursor:grab}
+.card[draggable="true"]:active{cursor:grabbing}
+
+.glist{margin-top:var(--s3);display:grid;gap:7px}
+.grow-row{display:flex;align-items:center;gap:var(--s1);
+  border:1px solid var(--line-strong);border-radius:var(--r1);padding:7px 11px}
+.grow-row input{flex:1;margin:0;border:0;background:transparent;padding:4px 0;
+  min-height:auto;color:var(--ink);font:inherit;font-size:14px}
+.grow-row input:focus{outline:none}
+.sheet select{width:100%;margin-top:5px;padding:10px 12px;min-height:42px;
+  border-radius:var(--r1);border:1px solid var(--line-strong);
+  background:var(--bg);color:var(--ink);font:inherit;font-size:14px}
 .card{background:var(--card);border:1px solid var(--line);
   border-radius:var(--r3);padding:var(--s3)}
 .card.clickable{cursor:pointer;transition:border-color var(--fast),

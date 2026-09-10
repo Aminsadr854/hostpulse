@@ -27,6 +27,12 @@ hostpulse is one process and one SQLite file. Adding a server is a form.
   network convention (a 100 Mbps port reads as 100 Mbps, not 95).
 - **Resources** — processor, memory and disk, live and over time.
 - Load average, uptime, and the last error if a server stops answering.
+- **Groups** — file servers under names you choose (billing type, customer,
+  location) and drag them into place. Each group carries its own totals, which
+  is the point of grouping: *what did the credit-billed machines cost this
+  month* is a question about a set, and adding the cards up by eye is not an
+  answer. Deleting a group never deletes its servers; they simply become
+  ungrouped.
 
 Minute-resolution samples are kept for two days, hourly averages for four
 months, and daily totals for ever. A year of history for twenty servers is a

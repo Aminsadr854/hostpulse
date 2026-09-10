@@ -182,9 +182,56 @@ def _summary(con, s):
 
 async def api_servers(request):
     con = request.app["con"]
+    servers = [_summary(con, s) for s in db.list_servers(con)]
+    groups = db.list_groups(con)
+    # Totals per group are the reason to have groups at all: "what did the
+    # credit-billed machines cost this month" is a question about a set, and
+    # adding the cards up by eye is not an answer.
+    for g in groups:
+        mine = [s for s in servers if s.get("group_id") == g["id"]]
+        g["count"] = len(mine)
+        g["online"] = sum(1 for s in mine if s["online"])
+        for span in ("today", "week", "month"):
+            g[span] = sum(s[span]["total"] for s in mine)
+        g["rx_rate"] = sum(s["rx_rate"] or 0 for s in mine)
+        g["tx_rate"] = sum(s["tx_rate"] or 0 for s in mine)
     return web.json_response(
-        {"servers": [_summary(con, s) for s in db.list_servers(con)],
+        {"servers": servers, "groups": groups,
          "poll_seconds": collector.POLL_SECONDS})
+
+
+async def api_groups_add(request):
+    con = request.app["con"]
+    body = await request.json()
+    name = (body.get("name") or "").strip()
+    if not name:
+        return web.json_response({"error": "نام گروه لازم است"}, status=400)
+    return web.json_response({"ok": True, "id": db.add_group(con, name)})
+
+
+async def api_group_edit(request):
+    con = request.app["con"]
+    body = await request.json()
+    name = (body.get("name") or "").strip()
+    if not name:
+        return web.json_response({"error": "نام گروه لازم است"}, status=400)
+    db.rename_group(con, int(request.match_info["gid"]), name)
+    return web.json_response({"ok": True})
+
+
+async def api_group_delete(request):
+    con = request.app["con"]
+    db.delete_group(con, int(request.match_info["gid"]))
+    return web.json_response({"ok": True})
+
+
+async def api_layout(request):
+    """The whole arrangement after a drag: which group each server is in, and
+    the order of both."""
+    con = request.app["con"]
+    body = await request.json()
+    db.save_layout(con, body.get("groups"), body.get("servers"))
+    return web.json_response({"ok": True})
 
 
 async def api_server(request):
@@ -331,6 +378,10 @@ def build_app():
     app.router.add_post("/api/servers/{sid}/delete", api_delete)
     app.router.add_post("/api/servers/{sid}/poll", api_poll_now)
     app.router.add_post("/api/test", api_test)
+    app.router.add_post("/api/groups", api_groups_add)
+    app.router.add_post("/api/groups/{gid}", api_group_edit)
+    app.router.add_post("/api/groups/{gid}/delete", api_group_delete)
+    app.router.add_post("/api/layout", api_layout)
     app.router.add_static("/static/", STATIC)
     app.on_startup.append(start_collector)
     app.on_cleanup.append(stop_collector)

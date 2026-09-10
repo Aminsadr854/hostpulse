@@ -19,6 +19,12 @@ HOURLY_KEEP_DAYS = 120       # hourly rollups
 
 
 SCHEMA = """
+CREATE TABLE IF NOT EXISTS groups (
+    id          INTEGER PRIMARY KEY,
+    name        TEXT NOT NULL,
+    position    INTEGER NOT NULL DEFAULT 0
+);
+
 CREATE TABLE IF NOT EXISTS servers (
     id          INTEGER PRIMARY KEY,
     name        TEXT NOT NULL,
@@ -31,7 +37,9 @@ CREATE TABLE IF NOT EXISTS servers (
     enabled     INTEGER NOT NULL DEFAULT 1,
     created_at  INTEGER NOT NULL,
     last_ok     INTEGER,
-    last_error  TEXT
+    last_error  TEXT,
+    group_id    INTEGER,
+    position    INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS samples (
@@ -86,7 +94,22 @@ def connect():
     con.execute("PRAGMA journal_mode=WAL")
     con.execute("PRAGMA busy_timeout=10000")
     con.executescript(SCHEMA)
+    _migrate(con)
     return con
+
+
+def _migrate(con):
+    """Add columns a database made by an earlier version has never seen.
+
+    CREATE TABLE IF NOT EXISTS leaves an existing table exactly as it was, so a
+    panel that has been collecting for weeks would otherwise start throwing on
+    the first query that mentions a new column."""
+    have = {r["name"] for r in con.execute("PRAGMA table_info(servers)")}
+    for column, ddl in (("group_id", "INTEGER"),
+                        ("position", "INTEGER NOT NULL DEFAULT 0")):
+        if column not in have:
+            con.execute(f"ALTER TABLE servers ADD COLUMN {column} {ddl}")
+    con.commit()
 
 
 # ---------------------------------------------------------------- settings
@@ -103,14 +126,18 @@ def set_setting(con, k, v):
 # ----------------------------------------------------------------- servers
 def list_servers(con, include_secrets=False):
     cols = "*" if include_secrets else \
-        "id,name,host,port,username,auth,enabled,created_at,last_ok,last_error"
+        ("id,name,host,port,username,auth,enabled,created_at,last_ok,last_error,"
+         "group_id,position")
+    # The operator's arrangement first, and only then the name - a list that
+    # reorders itself after every rename is not an arrangement.
     return [dict(r) for r in con.execute(
-        f"SELECT {cols} FROM servers ORDER BY name COLLATE NOCASE")]
+        f"SELECT {cols} FROM servers ORDER BY position, name COLLATE NOCASE")]
 
 
 def get_server(con, sid, include_secrets=False):
     cols = "*" if include_secrets else \
-        "id,name,host,port,username,auth,enabled,created_at,last_ok,last_error"
+        ("id,name,host,port,username,auth,enabled,created_at,last_ok,last_error,"
+         "group_id,position")
     r = con.execute(f"SELECT {cols} FROM servers WHERE id=?", (sid,)).fetchone()
     return dict(r) if r else None
 
@@ -129,7 +156,7 @@ def add_server(con, **f):
 def update_server(con, sid, **f):
     sets, vals = [], []
     for k in ("name", "host", "port", "username", "auth", "secret",
-              "passphrase", "enabled"):
+              "passphrase", "enabled", "group_id", "position"):
         if k in f and f[k] is not None:
             sets.append(f"{k}=?")
             vals.append(f[k])
@@ -154,6 +181,45 @@ def mark_result(con, sid, ok, error=None):
     else:
         con.execute("UPDATE servers SET last_error=? WHERE id=?",
                     (str(error)[:300], sid))
+    con.commit()
+
+
+# ------------------------------------------------------------------ groups
+def list_groups(con):
+    return [dict(r) for r in con.execute(
+        "SELECT * FROM groups ORDER BY position, id")]
+
+
+def add_group(con, name):
+    pos = con.execute("SELECT COALESCE(MAX(position),0)+1 p FROM groups").fetchone()["p"]
+    cur = con.execute("INSERT INTO groups (name, position) VALUES (?,?)",
+                      (name.strip()[:60], pos))
+    con.commit()
+    return cur.lastrowid
+
+
+def rename_group(con, gid, name):
+    con.execute("UPDATE groups SET name=? WHERE id=?", (name.strip()[:60], gid))
+    con.commit()
+
+
+def delete_group(con, gid):
+    # The servers outlive the group; they simply become ungrouped. Deleting a
+    # label should never be a way to lose a machine.
+    con.execute("UPDATE servers SET group_id=NULL WHERE group_id=?", (gid,))
+    con.execute("DELETE FROM groups WHERE id=?", (gid,))
+    con.commit()
+
+
+def save_layout(con, groups, servers):
+    """Persist an arrangement in one go: group order, and each server's group
+    and place within it."""
+    for pos, gid in enumerate(groups or []):
+        con.execute("UPDATE groups SET position=? WHERE id=?", (pos, int(gid)))
+    for pos, item in enumerate(servers or []):
+        gid = item.get("group_id")
+        con.execute("UPDATE servers SET group_id=?, position=? WHERE id=?",
+                    (int(gid) if gid else None, pos, int(item["id"])))
     con.commit()
 
 

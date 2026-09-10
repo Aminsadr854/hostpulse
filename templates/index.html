@@ -23,14 +23,39 @@
         <path d="M12 5v14M5 12h14"/></svg>
       افزودن سرور
     </button>
+    <button id="groups-btn" title="گروه‌ها">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+        <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+        <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+        <rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      گروه‌ها
+    </button>
     <a href="/logout" class="btn">خروج</a>
   </div>
 </header>
 
 <main>
-  <div id="cards" class="cards"></div>
+  <div id="board"></div>
   <p id="empty" class="empty" hidden>هنوز سروری اضافه نشده. با دکمهٔ «افزودن سرور» شروع کن.</p>
 </main>
+
+<!-- groups -->
+<div id="groupsheet" class="modal" hidden>
+  <div class="sheet">
+    <div class="sheet-head"><h2>گروه‌ها</h2>
+      <button class="close" aria-label="بستن">بستن</button></div>
+    <p class="sub">گروه بساز و بعد کارت سرورها را با کشیدن داخلشان بگذار.</p>
+    <div class="row">
+      <label class="grow">نام گروه تازه
+        <input id="g-name" placeholder="مثلاً سرورهای کردیتی"></label>
+      <button id="g-add" class="primary">بساز</button>
+    </div>
+    <div id="g-list" class="glist"></div>
+    <div id="g-msg" class="msg" hidden></div>
+  </div>
+</div>
 
 <!-- server detail -->
 <div id="detail" class="modal" hidden>
@@ -70,6 +95,7 @@
       <label class="narrow">پورت <input id="f-port" dir="ltr" value="22"></label>
     </div>
     <label>نام کاربری <input id="f-user" dir="ltr" value="root"></label>
+    <label>گروه <select id="f-group"></select></label>
 
     <div class="tabs">
       <button data-auth="password" class="on">رمز عبور</button>
