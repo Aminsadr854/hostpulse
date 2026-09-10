@@ -4,8 +4,8 @@
    sits over content. Two adaptations the skill could not know about:
 
    - it paired Fira Sans with Fira Code, and Fira Sans has no Persian glyphs.
-     Vazirmatn carries the text, Fira Code carries the numbers, which is the
-     half of the pairing that actually matters on a metrics panel.
+     Samim carries the text and Fira Code the numbers, which is the half of
+     that pairing that actually matters on a metrics panel.
    - it suggested glassmorphism throughout and then flags its own contrast
      risk. Blur is used on the header and the dialog scrim only; cards stay
      opaque so 4.5:1 holds on every reading.
@@ -43,15 +43,21 @@
 html{-webkit-text-size-adjust:100%}
 body{
   margin:0;background:var(--bg);color:var(--ink);
-  font-family:Vazirmatn,system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;
+  font-family:Samim,system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;
   font-size:16px;line-height:1.55;
 }
 body.centre{display:grid;place-items:center;min-height:100dvh;padding:var(--s3)}
-/* numbers read as data, and line up in a column */
+/* Numbers read as data and line up in a column. Samim comes straight after
+   Fira Code, which has no Persian glyphs: these fields are not purely numeric
+   - a status word, a duration in words, the ٪ sign - and without the fallback
+   named here those characters would be drawn by whatever the system offers. */
 .num,.host,.val,.stats b,.traffic b,.rate{
-  font-family:"Fira Code",ui-monospace,Menlo,Consolas,monospace;
+  font-family:"Fira Code",Samim,ui-monospace,Menlo,Consolas,monospace;
   font-variant-numeric:tabular-nums;font-feature-settings:"tnum";direction:ltr;
 }
+/* the two that are words far more often than numbers */
+.stats b,.state{font-family:Samim,system-ui,sans-serif;direction:rtl}
+.stats b .n{font-family:"Fira Code",Samim,monospace;direction:ltr}
 
 h1{font-size:19px;margin:0;letter-spacing:-.01em}
 h2{font-size:17px;margin:0}
@@ -154,8 +160,8 @@ button.danger:hover{filter:brightness(1.08)}
   background:var(--bg);color:var(--ink);font:inherit;font-size:14px;
   transition:border-color var(--fast)}
 .sheet input:focus,.sheet textarea:focus{border-color:var(--accent);outline:none}
-.sheet textarea{font-family:"Fira Code",ui-monospace,monospace;font-size:12px;
-  line-height:1.5}
+.sheet textarea{font-family:"Fira Code",Samim,ui-monospace,monospace;
+  font-size:12px;line-height:1.5}
 .row{display:flex;gap:var(--s1);align-items:flex-end}
 .grow{flex:1} .narrow{width:104px}
 .hint{opacity:.75}

@@ -1,14 +1,22 @@
-/* Vazirmatn carries the Persian text, Fira Code the numbers.
-   Both are served from this host - a monitoring panel that cannot render
-   because a font CDN is unreachable is a monitoring panel that has failed at
-   the moment you needed it. Files are fetched once by install.sh. */
+/* Samim for the text, Fira Code for the numbers.
+
+   Both are served from this host. A monitoring panel that will not render
+   because a font CDN is unreachable has failed at exactly the moment it was
+   needed, so nothing here reaches out at runtime; install.sh fetches the two
+   files once.
+
+   Fira Code has no Persian glyphs, so every rule that uses it names Samim
+   immediately after: a Persian word inside a numeric field - "آنلاین", a
+   duration, the ٪ sign - then falls back to Samim rather than to whatever the
+   operating system happens to offer.  */
+
 @font-face{
-  font-family:'Vazirmatn';font-style:normal;font-weight:400;font-display:swap;
-  src:url('/static/fonts/Vazirmatn-Regular.woff2') format('woff2');
+  font-family:'Samim';font-style:normal;font-weight:400;font-display:swap;
+  src:url('/static/fonts/Samim-Regular.woff2') format('woff2');
 }
 @font-face{
-  font-family:'Vazirmatn';font-style:normal;font-weight:600;font-display:swap;
-  src:url('/static/fonts/Vazirmatn-SemiBold.woff2') format('woff2');
+  font-family:'Samim';font-style:normal;font-weight:600;font-display:swap;
+  src:url('/static/fonts/Samim-SemiBold.woff2') format('woff2');
 }
 @font-face{
   font-family:'Fira Code';font-style:normal;font-weight:400;font-display:swap;

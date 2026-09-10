@@ -3,6 +3,14 @@
    history. Charts are rebuilt rather than updated in place - a few hundred
    points cost nothing to redraw and it keeps the range switch honest. */
 
+/* Chart.js renders its legend, ticks and tooltips with its own font setting,
+   not the page's. Left alone, every Persian label inside a chart - the series
+   names, the tooltip text - is drawn in a Latin default and falls back to
+   whatever the system has. */
+Chart.defaults.font.family = "Samim, system-ui, sans-serif";
+Chart.defaults.font.size = 11;
+Chart.defaults.color = '#94A3B8';
+
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
@@ -16,10 +24,13 @@ const fmtBytes = (b) => {
 const fmtRate = (bps) => bps === null || bps === undefined
   ? '—' : fmtBytes(bps) + '/s';
 const fmtPct = (p) => p === null || p === undefined ? '—' : p.toFixed(0) + '٪';
+/* Mostly words, so the digits are wrapped and the rest is left to Samim -
+   otherwise "روز" and "ساعت" are drawn by a font that has no Persian. */
 const fmtUptime = (s) => {
   if (!s) return '—';
   const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600);
-  return d > 0 ? `${d} روز ${h} ساعت` : `${h} ساعت`;
+  const n = (v) => `<span class="n">${v}</span>`;
+  return d > 0 ? `${n(d)} روز ${n(h)} ساعت` : `${n(h)} ساعت`;
 };
 const level = (p) => p === null || p === undefined ? '' : (p >= 90 ? 'bad' : p >= 75 ? 'warn' : '');
 
