@@ -7,6 +7,11 @@
   :root{ --bg:#f5f6f8; --panel:#fff; --line:#e3e6ec; --ink:#1a1d24; --dim:#6b7280; }
 }
 *{box-sizing:border-box}
+/* `.modal{display:grid}` and the browser's own `[hidden]{display:none}` have
+   the same specificity, so the later rule - ours - was winning and a dialog
+   stayed on screen after its close button set hidden. Anything that can be
+   hidden has to say so louder than the rule that lays it out. */
+[hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--ink);
   font:14px/1.6 system-ui,-apple-system,"Segoe UI",Vazirmatn,Tahoma,sans-serif}
 body.centre{display:grid;place-items:center;min-height:100vh}

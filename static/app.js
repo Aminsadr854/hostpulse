@@ -193,10 +193,21 @@ async function post(url, body) {
 
 /* ---------------------------------------------------------------- wire */
 $('#add-btn').addEventListener('click', () => openForm(null));
-$$('.close').forEach(b => b.addEventListener('click', (e) => {
-  e.target.closest('.modal').hidden = true;
-  if (e.target.closest('#detail')) detailId = null;
+function closeModal(el) {
+  if (!el) return;
+  el.hidden = true;
+  if (el.id === 'detail') detailId = null;
+}
+$$('.close').forEach(b => b.addEventListener('click', (e) =>
+  closeModal(e.target.closest('.modal'))));
+// Clicking the dark area outside the sheet, and Escape - both are what people
+// reach for before they look for a button.
+$$('.modal').forEach(m => m.addEventListener('click', (e) => {
+  if (e.target === m) closeModal(m);
 }));
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') $$('.modal').forEach(m => { if (!m.hidden) closeModal(m); });
+});
 $$('.tabs button').forEach(b => b.addEventListener('click', () => setAuth(b.dataset.auth)));
 $$('.seg button').forEach(b => b.addEventListener('click', () => {
   $$('.seg button').forEach(x => x.classList.toggle('on', x === b));
