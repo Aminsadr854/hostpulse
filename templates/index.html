@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>hostpulse</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <h1>hostpulse</h1>
+  <div class="actions">
+    <button id="add-btn" class="primary">افزودن سرور</button>
+    <a href="/logout" class="ghost">خروج</a>
+  </div>
+</header>
+
+<main>
+  <div id="cards" class="cards"></div>
+  <p id="empty" class="empty" hidden>هنوز سروری اضافه نشده. با دکمهٔ «افزودن سرور» شروع کن.</p>
+</main>
+
+<!-- server detail -->
+<div id="detail" class="modal" hidden>
+  <div class="sheet wide">
+    <div class="sheet-head">
+      <h2 id="d-name"></h2>
+      <div>
+        <span class="seg">
+          <button data-range="24h" class="on">۲۴ ساعت</button>
+          <button data-range="7d">۷ روز</button>
+          <button data-range="30d">۳۰ روز</button>
+        </span>
+        <button class="ghost close">بستن</button>
+      </div>
+    </div>
+    <div id="d-stats" class="stats"></div>
+    <div class="charts">
+      <div class="chart"><h3>پردازنده و حافظه (٪)</h3><canvas id="c-cpu"></canvas></div>
+      <div class="chart"><h3>پهنای باند</h3><canvas id="c-net"></canvas></div>
+      <div class="chart"><h3>مصرف دیسک (٪)</h3><canvas id="c-disk"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- add / edit -->
+<div id="form" class="modal" hidden>
+  <div class="sheet">
+    <div class="sheet-head"><h2 id="f-title">افزودن سرور</h2>
+      <button class="ghost close">بستن</button></div>
+    <label>نام <input id="f-name" placeholder="مثلاً سرور آلمان"></label>
+    <div class="row">
+      <label class="grow">آدرس یا آی‌پی <input id="f-host" dir="ltr" placeholder="1.2.3.4"></label>
+      <label class="narrow">پورت <input id="f-port" dir="ltr" value="22"></label>
+    </div>
+    <label>نام کاربری <input id="f-user" dir="ltr" value="root"></label>
+
+    <div class="tabs">
+      <button data-auth="password" class="on">رمز عبور</button>
+      <button data-auth="key">کلید خصوصی SSH</button>
+    </div>
+
+    <div id="pane-password">
+      <label>رمز عبور <input id="f-password" type="password" dir="ltr"></label>
+    </div>
+    <div id="pane-key" hidden>
+      <label>کلید خصوصی
+        <textarea id="f-key" dir="ltr" rows="7"
+          placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"></textarea></label>
+      <label>عبارت عبور کلید <span class="hint">(اگر کلید رمز دارد)</span>
+        <input id="f-passphrase" type="password" dir="ltr"></label>
+    </div>
+
+    <div id="f-msg" class="msg" hidden></div>
+    <div class="sheet-foot">
+      <button id="f-test" class="ghost">تست اتصال</button>
+      <button id="f-save" class="primary">ذخیره</button>
+      <button id="f-delete" class="danger" hidden>حذف</button>
+    </div>
+  </div>
+</div>
+
+<script src="/static/chart.min.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+data/
+venv/
+__pycache__/
+*.pyc
+static/chart.min.js

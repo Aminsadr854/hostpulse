@@ -1,0 +1,19 @@
+# hostpulse behind Apache with TLS.
+#   a2enmod proxy proxy_http && certbot --apache -d monitor.example.com
+<VirtualHost *:443>
+    ServerName monitor.example.com
+
+    SSLEngine on
+    SSLCertificateFile    /etc/letsencrypt/live/monitor.example.com/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/monitor.example.com/privkey.pem
+
+    ProxyPreserveHost On
+    ProxyPass        / http://127.0.0.1:8899/
+    ProxyPassReverse / http://127.0.0.1:8899/
+    RequestHeader set X-Forwarded-Proto "https"
+</VirtualHost>
+
+<VirtualHost *:80>
+    ServerName monitor.example.com
+    Redirect permanent / https://monitor.example.com/
+</VirtualHost>

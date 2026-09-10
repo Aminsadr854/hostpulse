@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ورود — hostpulse</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="centre">
+<form class="card" id="f">
+  <h1>hostpulse</h1>
+  <p class="sub">برای دیدن سرورها وارد شو.</p>
+  <input id="pw" type="password" placeholder="رمز عبور" autofocus dir="ltr">
+  <div id="msg" class="msg" hidden></div>
+  <button class="primary" type="submit">ورود</button>
+</form>
+<script>
+document.getElementById('f').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const msg = document.getElementById('msg');
+  const r = await fetch('/login', {method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({password: document.getElementById('pw').value})});
+  if (r.ok) { location.href = '/'; return; }
+  const d = await r.json().catch(() => ({}));
+  msg.textContent = d.error || 'ورود ناموفق';
+  msg.hidden = false;
+});
+</script>
+</body>
+</html>

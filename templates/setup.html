@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>راه‌اندازی — hostpulse</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="centre">
+<form class="card" id="f">
+  <h1>اولین اجرا</h1>
+  <p class="sub">یک رمز عبور برای پنل انتخاب کن. بعداً با همین وارد می‌شوی.</p>
+  <input id="pw" type="password" placeholder="رمز عبور (حداقل ۸ نویسه)" autofocus dir="ltr">
+  <input id="pw2" type="password" placeholder="تکرار رمز عبور" dir="ltr">
+  <div id="msg" class="msg" hidden></div>
+  <button class="primary" type="submit">شروع</button>
+</form>
+<script>
+document.getElementById('f').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const msg = document.getElementById('msg');
+  const a = document.getElementById('pw').value, b = document.getElementById('pw2').value;
+  const show = t => { msg.textContent = t; msg.hidden = false; };
+  if (a !== b) return show('دو رمز یکسان نیستند');
+  if (a.length < 8) return show('رمز باید حداقل ۸ نویسه باشد');
+  const r = await fetch('/setup', {method: 'POST',
+    headers: {'Content-Type': 'application/json'}, body: JSON.stringify({password: a})});
+  if (r.ok) { location.href = '/'; return; }
+  const d = await r.json().catch(() => ({}));
+  show(d.error || 'خطا');
+});
+</script>
+</body>
+</html>

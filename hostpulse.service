@@ -1,0 +1,21 @@
+[Unit]
+Description=hostpulse - agentless server monitoring
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+WorkingDirectory=/opt/hostpulse
+Environment=HOSTPULSE_BIND=127.0.0.1
+Environment=HOSTPULSE_PORT=8899
+Environment=HOSTPULSE_DB=/opt/hostpulse/data/hostpulse.db
+Environment=HOSTPULSE_KEY=/opt/hostpulse/data/secret.key
+ExecStart=/opt/hostpulse/venv/bin/python /opt/hostpulse/app.py
+Restart=always
+RestartSec=5
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target
