@@ -49,7 +49,10 @@ function cardFor(s) {
   el.innerHTML = `
     <div class="card-head">
       <div><span class="dot ${s.online ? 'on' : 'off'}"></span><span class="name">${esc(s.name)}</span></div>
-      <div class="host">${esc(s.username)}@${esc(s.host)}:${s.port}</div>
+      <div class="head-right">
+        <span class="host">${esc(s.username)}@${esc(s.host)}:${s.port}</span>
+        <button class="icon edit" title="ویرایش و حذف">⋯</button>
+      </div>
     </div>
     <div class="bars">
       ${bar('پردازنده', s.cpu_pct)}
@@ -63,7 +66,10 @@ function cardFor(s) {
       <div><span>۳۰ روز</span><b>${fmtBytes(s.month.total)}</b></div>
     </div>
     ${s.last_error && !s.online ? `<div class="err">${esc(s.last_error)}</div>` : ''}`;
-  el.addEventListener('click', () => openDetail(s.id));
+  el.addEventListener('click', (e) => {
+    if (e.target.closest('.edit')) { e.stopPropagation(); openForm(s); return; }
+    openDetail(s.id);
+  });
   return el;
 }
 
@@ -72,6 +78,16 @@ const esc = (t) => String(t === null || t === undefined ? '' : t)
 
 /* -------------------------------------------------------------- detail */
 let charts = {}, detailId = null, detailRange = '24h';
+
+// bucket: what the server aggregates by; step: seconds each point covers, used
+// to turn a bucket total back into a rate.
+const RANGES = {
+  '1h':  {secs: 3600,       bucket: null,  step: 60,    kind: 'rate'},
+  '6h':  {secs: 6 * 3600,   bucket: null,  step: 60,    kind: 'rate'},
+  '24h': {secs: 86400,      bucket: null,  step: 60,    kind: 'rate'},
+  '7d':  {secs: 7 * 86400,  bucket: 'hour', step: 3600, kind: 'total'},
+  '30d': {secs: 30 * 86400, bucket: 'day',  step: 86400, kind: 'total'},
+};
 
 async function openDetail(id) {
   detailId = id;
@@ -95,49 +111,92 @@ async function loadDetail() {
     <div><span>ترافیک ۳۰ روز</span><b>${fmtBytes(s.month.total)}</b></div>`;
 
   const pts = d.points;
-  const labels = pts.map(p => new Date(p.ts * 1000).toLocaleString('fa-IR',
-    detailRange === '24h' ? {hour: '2-digit', minute: '2-digit'}
-                          : {month: 'short', day: 'numeric', hour: '2-digit'}));
+  const R = RANGES[detailRange];
+  $('#d-thin').hidden = pts.length >= 3;
+
+  // Latin digits and a 24-hour clock: Persian digits on a dense axis are hard
+  // to read at a glance, which is the only thing an axis is for.
+  const fmt = (ts) => {
+    const t = new Date(ts * 1000);
+    const p2 = (n) => String(n).padStart(2, '0');
+    return R.secs <= 86400
+      ? `${p2(t.getHours())}:${p2(t.getMinutes())}`
+      : `${p2(t.getDate())}/${p2(t.getMonth() + 1)}` +
+        (R.bucket === 'hour' ? ` ${p2(t.getHours())}h` : '');
+  };
+  const labels = pts.map(p => fmt(p.ts));
+
   draw('c-cpu', labels, [
     {label: 'پردازنده ٪', data: pts.map(p => p.cpu_pct), color: '#5b9dff'},
     {label: 'حافظه ٪', data: pts.map(p => p.mem_pct), color: '#3ddc84'},
-  ], {max: 100});
-  // per-second on the raw view, per-bucket totals once rolled up
-  const div = detailRange === '24h' ? 60 : (detailRange === '7d' ? 3600 : 86400);
-  draw('c-net', labels, [
-    {label: 'دریافت', data: pts.map(p => (p.rx_bytes || 0) / div), color: '#5b9dff', fill: true},
-    {label: 'ارسال', data: pts.map(p => (p.tx_bytes || 0) / div), color: '#c48bff', fill: true},
-  ], {bytesRate: true});
+  ], {max: 100, unit: 'pct'});
+
+  // Live views read better as a rate; a week or a month is a question about
+  // volume - how much did this move on Tuesday - so those are bucket totals.
+  if (R.kind === 'rate') {
+    draw('c-net', labels, [
+      {label: 'دریافت', data: pts.map(p => (p.rx_bytes || 0) / R.step), color: '#5b9dff', fill: true},
+      {label: 'ارسال', data: pts.map(p => (p.tx_bytes || 0) / R.step), color: '#c48bff', fill: true},
+    ], {unit: 'rate'});
+    $('#net-title').textContent = 'پهنای باند';
+  } else {
+    draw('c-net', labels, [
+      {label: 'دریافت', data: pts.map(p => p.rx_bytes || 0), color: '#5b9dff'},
+      {label: 'ارسال', data: pts.map(p => p.tx_bytes || 0), color: '#c48bff'},
+    ], {unit: 'bytes', bars: true, stacked: true});
+    $('#net-title').textContent =
+      R.bucket === 'day' ? 'ترافیک هر روز' : 'ترافیک هر ساعت';
+  }
+
   draw('c-disk', labels, [
     {label: 'دیسک ٪', data: pts.map(p => p.disk_pct), color: '#ffb020'},
-  ], {max: 100});
+  ], {max: 100, unit: 'pct'});
+}
+
+function unitFmt(unit) {
+  if (unit === 'rate') return fmtRate;
+  if (unit === 'bytes') return fmtBytes;
+  return (v) => (v === null || v === undefined) ? '—' : v.toFixed(1) + '٪';
 }
 
 function draw(canvasId, labels, sets, opts = {}) {
   if (charts[canvasId]) charts[canvasId].destroy();
-  const ctx = document.getElementById(canvasId);
-  charts[canvasId] = new Chart(ctx, {
-    type: 'line',
+  const f = unitFmt(opts.unit);
+  charts[canvasId] = new Chart(document.getElementById(canvasId), {
+    type: opts.bars ? 'bar' : 'line',
     data: {
       labels,
       datasets: sets.map(s => ({
-        label: s.label, data: s.data, borderColor: s.color,
-        backgroundColor: s.fill ? s.color + '22' : 'transparent',
-        fill: !!s.fill, borderWidth: 2, pointRadius: 0, tension: .25, spanGaps: true,
+        label: s.label,
+        data: s.data,
+        borderColor: s.color,
+        backgroundColor: opts.bars ? s.color + 'cc' : (s.fill ? s.color + '22' : 'transparent'),
+        fill: !!s.fill,
+        borderWidth: opts.bars ? 0 : 2,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        tension: .25,
+        // A break in the line is a server that was not answering. Joining
+        // across it would draw traffic that never happened.
+        spanGaps: false,
       })),
     },
     options: {
       responsive: true, maintainAspectRatio: false,
+      animation: false,
       interaction: {mode: 'index', intersect: false},
       plugins: {
         legend: {labels: {boxWidth: 10, font: {size: 11}}},
-        tooltip: {callbacks: {label: (c) => c.dataset.label + ': ' +
-          (opts.bytesRate ? fmtRate(c.parsed.y) : (c.parsed.y === null ? '—' : c.parsed.y.toFixed(1) + '٪'))}},
+        tooltip: {
+          callbacks: {label: (c) => c.dataset.label + ': ' + f(c.parsed.y)},
+        },
       },
       scales: {
-        x: {ticks: {maxTicksLimit: 8, font: {size: 10}}, grid: {display: false}},
-        y: {beginAtZero: true, max: opts.max,
-            ticks: {font: {size: 10}, callback: (v) => opts.bytesRate ? fmtRate(v) : v + '٪'}},
+        x: {ticks: {maxTicksLimit: 10, font: {size: 10}, autoSkip: true},
+            grid: {display: false}, stacked: !!opts.stacked},
+        y: {beginAtZero: true, max: opts.max, stacked: !!opts.stacked,
+            ticks: {font: {size: 10}, maxTicksLimit: 6, callback: f},
+            grid: {color: 'rgba(128,128,128,.15)'}},
       },
     },
   });
@@ -228,6 +287,12 @@ $('#f-test').addEventListener('click', async () => {
 
 $('#f-save').addEventListener('click', async () => {
   const body = formBody();
+  if (!editing) {
+    const twin = servers.find(s => s.host === body.host && s.port === body.port &&
+                                   s.username === body.username);
+    if (twin && !confirm(`«${twin.name}» همین حالا همین آدرس را دارد. باز هم اضافه شود؟`))
+      return;
+  }
   if (editing && !body.secret) { delete body.secret; delete body.auth; }
   const url = editing ? `/api/servers/${editing.id}` : '/api/servers';
   const {ok, data} = await post(url, body);

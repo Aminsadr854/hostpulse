@@ -27,6 +27,8 @@
       <h2 id="d-name"></h2>
       <div>
         <span class="seg">
+          <button data-range="1h">۱ ساعت</button>
+          <button data-range="6h">۶ ساعت</button>
           <button data-range="24h" class="on">۲۴ ساعت</button>
           <button data-range="7d">۷ روز</button>
           <button data-range="30d">۳۰ روز</button>
@@ -35,9 +37,11 @@
       </div>
     </div>
     <div id="d-stats" class="stats"></div>
+    <p id="d-thin" class="thin" hidden>هنوز داده‌ی کافی جمع نشده — هر دقیقه یک نمونه
+      گرفته می‌شود، پس نمودارها در ساعت اول کم‌جان‌اند.</p>
     <div class="charts">
       <div class="chart"><h3>پردازنده و حافظه (٪)</h3><canvas id="c-cpu"></canvas></div>
-      <div class="chart"><h3>پهنای باند</h3><canvas id="c-net"></canvas></div>
+      <div class="chart"><h3 id="net-title">پهنای باند</h3><canvas id="c-net"></canvas></div>
       <div class="chart"><h3>مصرف دیسک (٪)</h3><canvas id="c-disk"></canvas></div>
     </div>
   </div>
