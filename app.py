@@ -152,6 +152,7 @@ async def do_logout(request):
 # -------------------------------------------------------------------- api
 def _summary(con, s):
     last = db.latest(con, s["id"])
+    rx_rate, tx_rate = db.latest_rate(con, s["id"])
     now = int(time.time())
     day = now // 86400 * 86400
     online = bool(s["last_ok"] and now - s["last_ok"] < 180)
@@ -167,12 +168,10 @@ def _summary(con, s):
         "disk_total": last.get("disk_total") if last else None,
         "load1": last.get("load1") if last else None,
         "uptime": last.get("uptime") if last else None,
-        # bytes per second over the last minute, which is what "bandwidth"
-        # means to someone looking at a live panel
-        "rx_rate": (last["rx_delta"] / collector.POLL_SECONDS)
-        if last and last.get("rx_delta") is not None else None,
-        "tx_rate": (last["tx_delta"] / collector.POLL_SECONDS)
-        if last and last.get("tx_delta") is not None else None,
+        # measured over the gap that actually elapsed, and absent once the
+        # reading is too old to describe what the machine is doing now
+        "rx_rate": rx_rate,
+        "tx_rate": tx_rate,
         "today": db.traffic_total(con, s["id"], day),
         "week": db.traffic_total(con, s["id"], now - 7 * 86400),
         "month": db.traffic_total(con, s["id"], now - 30 * 86400),
@@ -193,8 +192,12 @@ async def api_servers(request):
         g["online"] = sum(1 for s in mine if s["online"])
         for span in ("today", "week", "month"):
             g[span] = sum(s[span]["total"] for s in mine)
-        g["rx_rate"] = sum(s["rx_rate"] or 0 for s in mine)
-        g["tx_rate"] = sum(s["tx_rate"] or 0 for s in mine)
+        # Only the servers actually reporting: a machine that went quiet an
+        # hour ago was contributing its last known rate to the group for ever.
+        live = [s for s in mine if s["rx_rate"] is not None]
+        g["rx_rate"] = sum(s["rx_rate"] for s in live)
+        g["tx_rate"] = sum(s["tx_rate"] for s in live)
+        g["rate_from"] = len(live)
     return web.json_response(
         {"servers": servers, "groups": groups,
          "poll_seconds": collector.POLL_SECONDS})

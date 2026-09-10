@@ -41,6 +41,33 @@ echo "@host"; hostname
 """
 
 
+# Interfaces whose bytes are already counted somewhere else, or are not
+# traffic at all.
+#
+# The tunnel devices matter most here. A packet crossing a GRE or WireGuard
+# tunnel is counted once on the physical interface it actually left by, and
+# again on the tunnel device it was handed to - so a tunnel server reported
+# roughly half as much traffic again as it really moved. On one of them, eth0
+# showed 3660 GB and cbgre2 another 1445 GB of the very same packets.
+#
+# What is left is the set of interfaces that carry bytes to and from the
+# outside world exactly once: the physical ones.
+_VIRTUAL_PREFIXES = (
+    "veth", "docker", "br-", "virbr", "vmbr",     # bridges and containers
+    "gre", "gretap", "erspan", "cbgre", "ip6gre", # GRE, including ours
+    "tun", "tap", "wg", "ppp", "sit", "ipip",     # VPN and IP-in-IP
+    "vxlan", "bond", "dummy", "teql", "nlmon",
+)
+
+
+def _virtual(name):
+    """True when this interface's bytes are a copy of bytes counted elsewhere."""
+    if name == "lo" or "@" in name:
+        return True
+    base = name.split(":")[0]          # eth0:1 is an alias of eth0
+    return base.startswith(_VIRTUAL_PREFIXES)
+
+
 def _sections(text):
     out, cur = {}, None
     for line in text.splitlines():
@@ -81,9 +108,7 @@ def parse(text):
             continue
         name, rest = line.split(":", 1)
         name = name.strip()
-        # Loopback is not traffic, and virtual interfaces would count the same
-        # bytes a second time as they pass through.
-        if name == "lo" or name.startswith(("veth", "docker", "br-", "virbr")):
+        if _virtual(name):
             continue
         f = rest.split()
         if len(f) >= 9:

@@ -95,7 +95,8 @@ function bandFor({group, list}) {
          <span>امروز <b>${fmtBytes(group.today)}</b></span>
          <span>۷ روز <b>${fmtBytes(group.week)}</b></span>
          <span>۳۰ روز <b>${fmtBytes(group.month)}</b></span>
-         <span>اکنون <b>${fmtBits(group.rx_rate + group.tx_rate)}</b></span>
+         <span>اکنون ${arrow('down')} <b>${fmtBits(group.rx_rate)}</b>
+           ${arrow('up')} <b>${fmtBits(group.tx_rate)}</b></span>
        </div>` : '';
   wrap.innerHTML = `
     <div class="group-head">

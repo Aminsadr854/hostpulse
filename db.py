@@ -255,6 +255,32 @@ def latest(con, sid):
     return dict(r) if r else None
 
 
+def latest_rate(con, sid, stale_after=210):
+    """
+    Bytes per second, from the gap between the last two samples.
+
+    Dividing by the nominal poll interval is only right when the poll happened
+    on time. A retry, a restart, or a manual poll makes the real gap anything
+    from seconds to minutes, and the reported rate is wrong by that ratio.
+
+    A reading older than a few minutes is not a current rate at all - it is the
+    last thing a machine said before it went quiet - so it returns nothing
+    rather than keeping a dead server's traffic on the board for ever.
+    """
+    rows = con.execute(
+        """SELECT ts, rx_delta, tx_delta FROM samples
+           WHERE server_id=? ORDER BY ts DESC LIMIT 2""", (sid,)).fetchall()
+    if len(rows) < 2:
+        return None, None
+    now, before = rows[0], rows[1]
+    if time.time() - now["ts"] > stale_after:
+        return None, None
+    gap = now["ts"] - before["ts"]
+    if gap <= 0:
+        return None, None
+    return (now["rx_delta"] or 0) / gap, (now["tx_delta"] or 0) / gap
+
+
 # ----------------------------------------------------------------- history
 def series(con, sid, since, bucket=None):
     """Points for a graph. Raw below two days, rolled up above."""
