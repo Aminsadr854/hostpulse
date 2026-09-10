@@ -96,6 +96,27 @@
   </div>
 </div>
 
+<div id="boot-error" class="boot-error" hidden></div>
+<script>
+/* A script that fails to parse takes the whole panel with it, and the symptom
+   is silence: cards never render and buttons appear dead. Say so instead. */
+(function () {
+  var show = function (what) {
+    var el = document.getElementById('boot-error');
+    el.textContent = 'پنل بالا نیامد — ' + what +
+      '. صفحه را با Ctrl+Shift+R تازه کن؛ اگر باز هم بود، خطا در کنسول مرورگر است.';
+    el.hidden = false;
+  };
+  window.addEventListener('error', function (e) {
+    if (e.filename && e.filename.indexOf('/static/') !== -1) show('خطا در اسکریپت');
+  });
+  window.addEventListener('DOMContentLoaded', function () {
+    setTimeout(function () {
+      if (!window.__hostpulseReady) show('اسکریپت اجرا نشد');
+    }, 2500);
+  });
+})();
+</script>
 <script src="/static/chart.min.js"></script>
 <script src="/static/app.js"></script>
 </body>

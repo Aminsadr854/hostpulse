@@ -95,7 +95,7 @@ const arrow = (dir) => `<svg width="13" height="13" viewBox="0 0 24 24" fill="no
     ? '<path d="M12 5v14M19 12l-7 7-7-7"/>'
     : '<path d="M12 19V5M5 12l7-7 7 7"/>'}</svg>`;
 
-const esc = (t) = String(t === null || t === undefined ? '' : t)
+const esc = (t) => String(t === null || t === undefined ? '' : t)
   .replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 
 /* -------------------------------------------------------------- detail */
@@ -329,6 +329,10 @@ $('#f-delete').addEventListener('click', async () => {
   $('#form').hidden = true;
   refresh();
 });
+
+// Reaching here means the file parsed and every handler is bound; the boot
+// watchdog in the page checks for it.
+window.__hostpulseReady = true;
 
 refresh();
 setInterval(() => { refresh(); if (detailId) loadDetail(); }, 30000);
